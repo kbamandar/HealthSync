@@ -1,0 +1,398 @@
+openapi: 3.0.3
+info:
+  title: HealthSync API
+  version: "1.0"
+  description: >
+    Endpoint skeleton matching the development plan (§8). Request/response
+    schemas are filled in as each endpoint's business logic lands — see the
+    sprint plan for owning sprint per group.
+servers:
+  - url: https://api.healthsync.in/v1
+    description: production
+  - url: http://localhost:8000/api/v1
+    description: local
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    ApiSuccess:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          nullable: true
+        meta:
+          type: object
+          properties:
+            page:
+              type: integer
+            per_page:
+              type: integer
+            total:
+              type: integer
+    ApiError:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+            message:
+              type: string
+            details:
+              type: object
+
+  parameters:
+    Id:
+      name: id
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+
+  responses:
+    Success:
+      description: Success envelope
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ApiSuccess" }
+    Error:
+      description: Error envelope
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ApiError" }
+
+security:
+  - bearerAuth: []
+
+paths:
+  /auth/otp/send:
+    post:
+      tags: [Auth]
+      summary: Send OTP to mobile
+      security: []
+      responses:
+        "200": { $ref: "#/components/responses/Success" }
+  /auth/otp/verify:
+    post:
+      tags: [Auth]
+      summary: Verify OTP, return tokens
+      security: []
+      responses:
+        "200": { $ref: "#/components/responses/Success" }
+  /auth/refresh:
+    post:
+      tags: [Auth]
+      summary: Refresh access token
+      security: []
+      responses:
+        "200": { $ref: "#/components/responses/Success" }
+  /auth/logout:
+    post:
+      tags: [Auth]
+      summary: Revoke refresh token
+      responses:
+        "200": { $ref: "#/components/responses/Success" }
+
+  /users/me:
+    get:
+      tags: [Users]
+      summary: Get own profile
+      responses:
+        "200": { $ref: "#/components/responses/Success" }
+    put:
+      tags: [Users]
+      summary: Update profile
+      responses:
+        "200": { $ref: "#/components/responses/Success" }
+  /users/me/photo:
+    post:
+      tags: [Users]
+      summary: Upload profile photo
+      responses:
+        "200": { $ref: "#/components/responses/Success" }
+  /devices:
+    post:
+      tags: [Users]
+      summary: Register FCM device token
+      responses:
+        "200": { $ref: "#/components/responses/Success" }
+
+  /family/members:
+    get:
+      tags: [Family]
+      summary: List family members
+      responses:
+        "200": { $ref: "#/components/responses/Success" }
+    post:
+      tags: [Family]
+      summary: Add member (invite or guardian)
+      responses:
+        "200": { $ref: "#/components/responses/Success" }
+  /family/members/{id}:
+    put:
+      tags: [Family]
+      summary: Update member / access level
+      parameters: [{ $ref: "#/components/parameters/Id" }]
+      responses:
+        "200": { $ref: "#/components/responses/Success" }
+    delete:
+      tags: [Family]
+      summary: Remove member
+      parameters: [{ $ref: "#/components/parameters/Id" }]
+      responses:
+        "200": { $ref: "#/components/responses/Success" }
+  /family/invite/accept:
+    post:
+      tags: [Family]
+      summary: Accept invite (token in body)
+      responses:
+        "200": { $ref: "#/components/responses/Success" }
+  /family/invite/decline:
+    post:
+      tags: [Family]
+      summary: Decline invite
+      responses:
+        "200": { $ref: "#/components/responses/Success" }
+
+  /records:
+    get:
+      tags: [Records]
+      summary: List records
+      parameters:
+        - name: member_id
+          in: query
+          schema: { type: string }
+        - name: category
+          in: query
+          schema: { type: string }
+        - name: from
+          in: query
+          schema: { type: string, format: date }
+        - name: to
+          in: query
+          schema: { type: string, format: date }
+        - name: q
+          in: query
+          schema: { type: string }
+      responses:
+        "200": { $ref: "#/components/responses/Success" }
+    post:
+      tags: [Records]
+      summary: Create record
+      responses:
+        "200": { $ref: "#/components/responses/Success" }
+  /records/recycle-bin:
+    get:
+      tags: [Records]
+      summary: List soft-deleted records
+      responses:
+        "200": { $ref: "#/components/responses/Success" }
+  /records/{id}:
+    get:
+      tags: [Records]
+      summary: Get record + files
+      parameters: [{ $ref: "#/components/parameters/Id" }]
+      responses:
+        "200": { $ref: "#/components/responses/Success" }
+    put:
+      tags: [Records]
+      summary: Update record metadata
+      parameters: [{ $ref: "#/components/parameters/Id" }]
+      responses:
+        "200": { $ref: "#/components/responses/Success" }
+    delete:
+      tags: [Records]
+      summary: Soft delete
+      parameters: [{ $ref: "#/components/parameters/Id" }]
+      responses:
+        "200": { $ref: "#/components/responses/Success" }
+  /records/{id}/upload-url:
+    post:
+      tags: [Records]
+      summary: Get pre-signed S3 URL
+      parameters: [{ $ref: "#/components/parameters/Id" }]
+      responses:
+        "200": { $ref: "#/components/responses/Success" }
+  /records/{id}/files:
+    post:
+      tags: [Records]
+      summary: Register file after upload
+      parameters: [{ $ref: "#/components/parameters/Id" }]
+      responses:
+        "200": { $ref: "#/components/responses/Success" }
+  /records/{id}/restore:
+    post:
+      tags: [Records]
+      summary: Restore from recycle bin
+      parameters: [{ $ref: "#/components/parameters/Id" }]
+      responses:
+        "200": { $ref: "#/components/responses/Success" }
+
+  /vitals:
+    get:
+      tags: [Vitals]
+      summary: List readings
+      responses:
+        "200": { $ref: "#/components/responses/Success" }
+    post:
+      tags: [Vitals]
+      summary: Log reading
+      responses:
+        "200": { $ref: "#/components/responses/Success" }
+  /vitals/{id}:
+    delete:
+      tags: [Vitals]
+      summary: Delete reading
+      parameters: [{ $ref: "#/components/parameters/Id" }]
+      responses:
+        "200": { $ref: "#/components/responses/Success" }
+
+  /reminders:
+    get:
+      tags: [Reminders]
+      summary: List reminders
+      responses:
+        "200": { $ref: "#/components/responses/Success" }
+    post:
+      tags: [Reminders]
+      summary: Create reminder
+      responses:
+        "200": { $ref: "#/components/responses/Success" }
+  /reminders/{id}:
+    put:
+      tags: [Reminders]
+      summary: Update / disable
+      parameters: [{ $ref: "#/components/parameters/Id" }]
+      responses:
+        "200": { $ref: "#/components/responses/Success" }
+    delete:
+      tags: [Reminders]
+      summary: Delete
+      parameters: [{ $ref: "#/components/parameters/Id" }]
+      responses:
+        "200": { $ref: "#/components/responses/Success" }
+
+  /doctors:
+    get:
+      tags: [Doctors]
+      summary: List personal directory
+      responses:
+        "200": { $ref: "#/components/responses/Success" }
+    post:
+      tags: [Doctors]
+      summary: Add doctor
+      responses:
+        "200": { $ref: "#/components/responses/Success" }
+  /doctors/{id}:
+    put:
+      tags: [Doctors]
+      summary: Update
+      parameters: [{ $ref: "#/components/parameters/Id" }]
+      responses:
+        "200": { $ref: "#/components/responses/Success" }
+    delete:
+      tags: [Doctors]
+      summary: Remove
+      parameters: [{ $ref: "#/components/parameters/Id" }]
+      responses:
+        "200": { $ref: "#/components/responses/Success" }
+
+  /share/record:
+    post:
+      tags: [Sharing]
+      summary: Create record share link
+      responses:
+        "200": { $ref: "#/components/responses/Success" }
+  /share/summary:
+    post:
+      tags: [Sharing]
+      summary: Create health summary share link
+      responses:
+        "200": { $ref: "#/components/responses/Success" }
+  /share:
+    get:
+      tags: [Sharing]
+      summary: List active share links
+      responses:
+        "200": { $ref: "#/components/responses/Success" }
+  /share/{id}:
+    delete:
+      tags: [Sharing]
+      summary: Revoke
+      parameters: [{ $ref: "#/components/parameters/Id" }]
+      responses:
+        "200": { $ref: "#/components/responses/Success" }
+  /public/share/{token}:
+    get:
+      tags: [Sharing]
+      summary: "Public: access shared link (no auth)"
+      security: []
+      parameters:
+        - name: token
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200": { $ref: "#/components/responses/Success" }
+
+  /search:
+    get:
+      tags: [Search & Timeline]
+      summary: Full-text search
+      parameters:
+        - name: q
+          in: query
+          schema: { type: string }
+      responses:
+        "200": { $ref: "#/components/responses/Success" }
+  /timeline:
+    get:
+      tags: [Search & Timeline]
+      summary: Health event feed
+      responses:
+        "200": { $ref: "#/components/responses/Success" }
+
+  /dashboard:
+    get:
+      tags: [Dashboard]
+      summary: Home dashboard aggregate
+      responses:
+        "200": { $ref: "#/components/responses/Success" }
+  /members/{id}/health-score:
+    get:
+      tags: [Dashboard]
+      summary: Health Score
+      parameters: [{ $ref: "#/components/parameters/Id" }]
+      responses:
+        "200": { $ref: "#/components/responses/Success" }
+
+  /data-export:
+    post:
+      tags: [Data & Compliance]
+      summary: Request full data export
+      responses:
+        "200": { $ref: "#/components/responses/Success" }
+  /account/delete:
+    post:
+      tags: [Data & Compliance]
+      summary: Initiate account deletion
+      responses:
+        "200": { $ref: "#/components/responses/Success" }
+  /audit-log:
+    get:
+      tags: [Data & Compliance]
+      summary: Own audit history
+      responses:
+        "200": { $ref: "#/components/responses/Success" }
