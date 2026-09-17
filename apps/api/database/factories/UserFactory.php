@@ -2,10 +2,11 @@
 
 namespace Database\Factories;
 
+use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\User>
+ * @extends Factory<User>
  */
 class UserFactory extends Factory
 {
@@ -17,7 +18,7 @@ class UserFactory extends Factory
     public function definition(): array
     {
         return [
-            'mobile' => '+91' . fake()->unique()->numerify('##########'),
+            'mobile' => '+91'.fake()->unique()->numerify('##########'),
             'email' => fake()->unique()->safeEmail(),
             'name' => fake()->name(),
             'date_of_birth' => fake()->date(),
