@@ -14,12 +14,14 @@ use App\Http\Controllers\Api\VitalReadingController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function () {
-    // AUTH
+    // AUTH (public — these are how you obtain/refresh/drop credentials)
     Route::post('auth/otp/send', [AuthController::class, 'sendOtp']);
     Route::post('auth/otp/verify', [AuthController::class, 'verifyOtp']);
     Route::post('auth/refresh', [AuthController::class, 'refresh']);
     Route::post('auth/logout', [AuthController::class, 'logout']);
+});
 
+Route::prefix('v1')->middleware('auth.jwt')->group(function () {
     // USERS
     Route::get('users/me', [UserController::class, 'me']);
     Route::put('users/me', [UserController::class, 'updateMe']);
