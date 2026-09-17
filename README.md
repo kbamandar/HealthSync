@@ -9,8 +9,8 @@ See `docs/` for the product/development plan and architecture decision records.
 healthsync/
 ├── apps/
 │   ├── mobile/   ← React Native (Expo) app
-│   ├── web/      ← Next.js 14 web app
-│   └── api/      ← Laravel 11 backend
+│   ├── web/      ← Next.js 16 web app
+│   └── api/      ← Laravel 13 backend
 ├── packages/
 │   ├── ui/       ← Shared design tokens
 │   ├── types/    ← Shared TypeScript types (API contracts)
