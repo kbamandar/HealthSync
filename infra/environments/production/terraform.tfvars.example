@@ -1,0 +1,6 @@
+# Copy to terraform.tfvars and fill in — terraform.tfvars is gitignored.
+
+aws_region          = "ap-south-1"
+container_image     = "<account-id>.dkr.ecr.ap-south-1.amazonaws.com/api:latest"
+acm_certificate_arn = "arn:aws:acm:ap-south-1:<account-id>:certificate/<cert-id>"
+db_master_password  = "<set-me>"
