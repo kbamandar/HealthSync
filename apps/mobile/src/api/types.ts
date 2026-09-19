@@ -58,3 +58,50 @@ export interface FamilyMember {
   member_user_id: string | null;
   created_at: string;
 }
+
+export type RecordCategory =
+  | "lab_report"
+  | "radiology"
+  | "prescription"
+  | "discharge_summary"
+  | "vaccination"
+  | "chronic_condition"
+  | "allergy"
+  | "vital_signs"
+  | "dental"
+  | "eye"
+  | "insurance"
+  | "fitness_lifestyle"
+  | "other";
+
+export interface RecordFile {
+  id: string;
+  file_type: "pdf" | "jpg" | "png";
+  mime_type: string | null;
+  file_size_bytes: number | null;
+  download_url: string;
+  created_at: string | null;
+}
+
+export interface HealthRecord {
+  id: string;
+  member_id: string;
+  category: RecordCategory;
+  title: string | null;
+  record_date: string | null;
+  doctor_name: string | null;
+  hospital_clinic: string | null;
+  notes: string | null;
+  is_favourite: boolean;
+  custom_tags: string[];
+  deleted_at: string | null;
+  created_at: string;
+  // Only present on GET /records/:id and PUT /records/:id, not on list/recycle-bin rows.
+  files?: RecordFile[];
+}
+
+export interface RecordUploadUrl {
+  upload_url: string;
+  s3_key: string;
+  expires_in: number;
+}

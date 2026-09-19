@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\DoctorController;
 use App\Http\Controllers\Api\FamilyMemberController;
 use App\Http\Controllers\Api\HealthRecordController;
+use App\Http\Controllers\Internal\RecordFileTransferController;
 use App\Http\Controllers\Api\ReminderController;
 use App\Http\Controllers\Api\SearchController;
 use App\Http\Controllers\Api\SharedLinkController;
@@ -86,3 +87,13 @@ Route::prefix('v1')->middleware('auth.jwt')->group(function () {
 
 // Public: no auth required
 Route::get('public/share/{token}', [SharedLinkController::class, 'publicAccess']);
+
+// Stand-ins for S3 presigned URLs (see RecordStorageService) — gated by the
+// `signed` middleware alone, exactly as a presigned S3 URL is gated by its
+// own signature and nothing else.
+Route::middleware('signed')->group(function () {
+    Route::put('internal/records/upload/{key}', [RecordFileTransferController::class, 'upload'])
+        ->name('internal.records.upload');
+    Route::get('internal/records/download/{key}', [RecordFileTransferController::class, 'download'])
+        ->name('internal.records.download');
+});
