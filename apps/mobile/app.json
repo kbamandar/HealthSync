@@ -3,6 +3,7 @@
     "name": "HealthSync",
     "slug": "healthsync",
     "version": "1.0.0",
+    "scheme": "healthsync",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",

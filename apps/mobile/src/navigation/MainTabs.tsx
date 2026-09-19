@@ -1,5 +1,6 @@
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 
+import FamilyMemberSwitcher from "../components/FamilyMemberSwitcher";
 import HomeScreen from "../screens/HomeScreen";
 import RecordsScreen from "../screens/RecordsScreen";
 import VitalsScreen from "../screens/VitalsScreen";
@@ -12,9 +13,17 @@ export default function MainTabs() {
   return (
     <Tab.Navigator screenOptions={{ headerShown: true }}>
       <Tab.Screen name="Home" component={HomeScreen} />
-      <Tab.Screen name="Records" component={RecordsScreen} />
-      <Tab.Screen name="Vitals" component={VitalsScreen} />
-      <Tab.Screen name="Family" component={FamilyScreen} />
+      <Tab.Screen
+        name="Records"
+        component={RecordsScreen}
+        options={{ headerRight: () => <FamilyMemberSwitcher /> }}
+      />
+      <Tab.Screen
+        name="Vitals"
+        component={VitalsScreen}
+        options={{ headerRight: () => <FamilyMemberSwitcher /> }}
+      />
+      <Tab.Screen name="Family" component={FamilyScreen} options={{ headerShown: false }} />
       <Tab.Screen name="Profile" component={ProfileScreen} />
     </Tab.Navigator>
   );

@@ -38,3 +38,23 @@ export interface UserProfile {
 export interface VerifyOtpResponse extends AuthTokens {
   user: UserProfile;
 }
+
+export type FamilyRelationship = "self" | "spouse" | "parent" | "child" | "sibling" | "other";
+export type AccessLevel = "full_access" | "self_only" | "view_only";
+export type InviteStatus = "pending" | "accepted" | "declined";
+
+export interface FamilyMember {
+  id: string;
+  relationship: FamilyRelationship;
+  custom_label: string | null;
+  display_name: string;
+  date_of_birth: string | null;
+  gender: string | null;
+  blood_group: string | null;
+  is_guardian_managed: boolean;
+  access_level: AccessLevel;
+  invite_status: InviteStatus;
+  invite_email: string | null;
+  member_user_id: string | null;
+  created_at: string;
+}

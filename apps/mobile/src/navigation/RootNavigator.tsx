@@ -2,6 +2,8 @@ import { ActivityIndicator, View } from "react-native";
 import { NavigationContainer } from "@react-navigation/native";
 
 import { AuthProvider, useAuth } from "../auth/AuthContext";
+import { FamilyProvider } from "../family/FamilyContext";
+import InviteLinkHandler from "../family/InviteLinkHandler";
 import AuthFlow from "./AuthFlow";
 import MainTabs from "./MainTabs";
 import ProfileSetupScreen from "../screens/auth/ProfileSetupScreen";
@@ -32,7 +34,10 @@ export default function RootNavigator() {
   return (
     <NavigationContainer>
       <AuthProvider>
-        <Gate />
+        <FamilyProvider>
+          <InviteLinkHandler />
+          <Gate />
+        </FamilyProvider>
       </AuthProvider>
     </NavigationContainer>
   );
