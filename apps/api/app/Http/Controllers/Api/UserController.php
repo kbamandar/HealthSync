@@ -4,12 +4,15 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Responses\ApiResponse;
+use App\Services\Family\FamilyGroupProvisioner;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 class UserController extends Controller
 {
+    public function __construct(private readonly FamilyGroupProvisioner $familyGroups) {}
+
     public function me(Request $request)
     {
         return ApiResponse::success($this->serialize($request->user()));
@@ -29,6 +32,8 @@ class UserController extends Controller
 
         $user = $request->user();
         $user->update($data);
+
+        $this->familyGroups->ensureForUser($user);
 
         return ApiResponse::success($this->serialize($user));
     }
