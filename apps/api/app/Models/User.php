@@ -29,6 +29,7 @@ class User extends Authenticatable
         'emergency_contact_name',
         'emergency_contact_mobile',
         'is_active',
+        'deletion_requested_at',
     ];
 
     /**
@@ -50,6 +51,7 @@ class User extends Authenticatable
         return [
             'date_of_birth' => 'date',
             'is_active' => 'boolean',
+            'deletion_requested_at' => 'datetime',
         ];
     }
 }

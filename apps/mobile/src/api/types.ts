@@ -33,6 +33,7 @@ export interface UserProfile {
   emergency_contact_name: string | null;
   emergency_contact_mobile: string | null;
   profile_complete: boolean;
+  deletion_requested_at: string | null;
 }
 
 export interface VerifyOtpResponse extends AuthTokens {
@@ -261,4 +262,49 @@ export interface PublicSharedRecord {
   doctor_name: string | null;
   hospital_clinic: string | null;
   files: { file_type: "pdf" | "jpg" | "png"; download_url: string }[];
+}
+
+export type SessionPlatform = "ios" | "android" | "web";
+
+export interface Session {
+  id: string;
+  device_name: string | null;
+  platform: SessionPlatform | null;
+  ip_address: string | null;
+  is_current: boolean;
+  created_at: string;
+  expires_at: string;
+}
+
+export interface AuditLogEntry {
+  id: number;
+  event_type: string;
+  resource_type: string | null;
+  resource_id: string | null;
+  ip_address: string | null;
+  metadata: Record<string, unknown> | null;
+  created_at: string;
+}
+
+export interface AccountDeletionStatus {
+  deletion_requested_at: string;
+  purge_at: string;
+}
+
+export interface Doctor {
+  id: string;
+  name: string;
+  speciality: string | null;
+  hospital_clinic: string | null;
+  phone: string | null;
+  location: string | null;
+  notes: string | null;
+  created_at: string;
+}
+
+export interface DoctorVisit {
+  record_id: string;
+  title: string | null;
+  category: RecordCategory;
+  record_date: string | null;
 }

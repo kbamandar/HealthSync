@@ -13,3 +13,4 @@ Artisan::command('inspire', function () {
 // needing `php artisan horizon` running: nothing in this sandbox keeps a
 // long-lived process alive between sessions.
 Schedule::command('reminders:dispatch-due')->everyMinute();
+Schedule::command('accounts:purge-deleted')->daily();

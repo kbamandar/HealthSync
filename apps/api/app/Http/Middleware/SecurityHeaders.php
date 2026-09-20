@@ -1,0 +1,27 @@
+<?php
+
+namespace App\Http\Middleware;
+
+use Closure;
+use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\Response;
+
+/**
+ * TLS 1.3 termination itself happens at the load balancer (see
+ * infra/terraform) — this middleware only sets the response headers Laravel
+ * controls: HSTS (so clients pin to HTTPS after the first response) plus
+ * baseline anti-sniffing/framing headers.
+ */
+class SecurityHeaders
+{
+    public function handle(Request $request, Closure $next): Response
+    {
+        $response = $next($request);
+
+        $response->headers->set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+        $response->headers->set('X-Content-Type-Options', 'nosniff');
+        $response->headers->set('X-Frame-Options', 'DENY');
+
+        return $response;
+    }
+}

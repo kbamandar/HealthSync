@@ -72,6 +72,17 @@ return [
             'report' => false,
         ],
 
+        // Generated data-export ZIPs (Sprint 7). Same "never public, only via
+        // signed routes" contract as 'health-records', on its own disk so a
+        // cleanup job can purge exports independently of record files.
+        'data-exports' => [
+            'driver' => 'local',
+            'root' => storage_path('app/data-exports'),
+            'serve' => false,
+            'throw' => true,
+            'report' => false,
+        ],
+
     ],
 
     /*

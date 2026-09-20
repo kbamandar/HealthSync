@@ -6,4 +6,5 @@ export * from "./reminder";
 export * from "./doctor";
 export * from "./sharing";
 export * from "./audit";
+export * from "./session";
 export * from "./api";

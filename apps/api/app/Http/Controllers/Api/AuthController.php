@@ -55,6 +55,8 @@ class AuthController extends Controller
             'consent' => ['sometimes', 'array'],
             'consent.privacy_policy_version' => ['required_with:consent'],
             'consent.terms_of_service_version' => ['required_with:consent'],
+            'device_name' => ['nullable', 'string', 'max:255'],
+            'platform' => ['nullable', 'string', 'in:ios,android,web'],
         ]);
 
         $result = $this->otp->verify($data['email'], $data['mobile'], $data['otp']);
@@ -101,7 +103,7 @@ class AuthController extends Controller
 
         AuditEvent::record('login.otp', $user->id, $request, ['is_new_user' => $isNewUser]);
 
-        $tokens = $this->tokens->issueTokenPair($user, $request);
+        $tokens = $this->tokens->issueTokenPair($user, $request, $data['device_name'] ?? null, $data['platform'] ?? null);
 
         return ApiResponse::success([
             'user' => [
@@ -142,6 +144,7 @@ class AuthController extends Controller
 
         if ($refreshToken) {
             $this->tokens->revoke($refreshToken);
+            AuditEvent::record('auth.logout', $refreshToken->user_id, $request);
         }
 
         return ApiResponse::success();
