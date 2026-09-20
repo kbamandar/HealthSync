@@ -24,6 +24,7 @@ class AuditEvent extends Model
     {
         return [
             'metadata' => 'array',
+            'created_at' => 'datetime',
         ];
     }
 

@@ -14,6 +14,8 @@ class RefreshToken extends Model
 
     protected $fillable = [
         'user_id',
+        'device_name',
+        'platform',
         'token_hash',
         'expires_at',
         'revoked_at',
@@ -27,6 +29,7 @@ class RefreshToken extends Model
         return [
             'expires_at' => 'datetime',
             'revoked_at' => 'datetime',
+            'created_at' => 'datetime',
         ];
     }
 

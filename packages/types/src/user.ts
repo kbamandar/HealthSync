@@ -14,6 +14,7 @@ export interface User {
   emergencyContactName: string | null;
   emergencyContactMobile: string | null;
   isActive: boolean;
+  deletionRequestedAt: string | null;
   createdAt: string;
   updatedAt: string;
 }

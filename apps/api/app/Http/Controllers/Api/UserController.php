@@ -92,6 +92,7 @@ class UserController extends Controller
             'emergency_contact_name' => $user->emergency_contact_name,
             'emergency_contact_mobile' => $user->emergency_contact_mobile,
             'profile_complete' => $user->name !== null,
+            'deletion_requested_at' => $user->deletion_requested_at?->toIso8601String(),
         ];
     }
 }

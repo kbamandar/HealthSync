@@ -8,9 +8,11 @@ use App\Http\Controllers\Api\FamilyMemberController;
 use App\Http\Controllers\Api\HealthRecordController;
 use App\Http\Controllers\Api\ReminderController;
 use App\Http\Controllers\Api\SearchController;
+use App\Http\Controllers\Api\SessionController;
 use App\Http\Controllers\Api\SharedLinkController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\VitalReadingController;
+use App\Http\Controllers\Internal\DataExportTransferController;
 use App\Http\Controllers\Internal\RecordFileTransferController;
 use Illuminate\Support\Facades\Route;
 
@@ -65,6 +67,7 @@ Route::prefix('v1')->middleware('auth.jwt')->group(function () {
     Route::post('doctors', [DoctorController::class, 'store']);
     Route::put('doctors/{id}', [DoctorController::class, 'update']);
     Route::delete('doctors/{id}', [DoctorController::class, 'destroy']);
+    Route::get('doctors/{id}/visits', [DoctorController::class, 'visits']);
 
     // SHARING
     Route::post('share/record', [SharedLinkController::class, 'shareRecord']);
@@ -83,7 +86,12 @@ Route::prefix('v1')->middleware('auth.jwt')->group(function () {
     // DATA & COMPLIANCE
     Route::post('data-export', [ComplianceController::class, 'requestDataExport']);
     Route::post('account/delete', [ComplianceController::class, 'requestAccountDeletion']);
+    Route::delete('account/delete', [ComplianceController::class, 'cancelAccountDeletion']);
     Route::get('audit-log', [ComplianceController::class, 'auditLog']);
+
+    // SESSIONS (device trust management)
+    Route::get('sessions', [SessionController::class, 'index']);
+    Route::delete('sessions/{id}', [SessionController::class, 'destroy']);
 });
 
 // Public: no auth required
@@ -97,4 +105,6 @@ Route::middleware('signed')->group(function () {
         ->name('internal.records.upload');
     Route::get('internal/records/download/{key}', [RecordFileTransferController::class, 'download'])
         ->name('internal.records.download');
+    Route::get('internal/exports/download/{key}', [DataExportTransferController::class, 'download'])
+        ->name('internal.exports.download');
 });

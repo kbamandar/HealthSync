@@ -1,9 +1,13 @@
 import { useState } from "react";
 import { ActivityIndicator, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { useNavigation } from "@react-navigation/native";
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 
 import { useAuth } from "../auth/AuthContext";
+import type { ProfileStackParamList } from "../navigation/ProfileStack";
 
 export default function ProfileScreen() {
+  const navigation = useNavigation<NativeStackNavigationProp<ProfileStackParamList>>();
   const { user, completeProfile, logout } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [name, setName] = useState(user?.name ?? "");
@@ -98,6 +102,10 @@ export default function ProfileScreen() {
         </TouchableOpacity>
       )}
 
+      <TouchableOpacity style={styles.secondaryButton} onPress={() => navigation.navigate("Doctors")}>
+        <Text style={styles.secondaryButtonText}>Doctors</Text>
+      </TouchableOpacity>
+
       <TouchableOpacity style={styles.logoutButton} onPress={logout}>
         <Text style={styles.logoutText}>Log out</Text>
       </TouchableOpacity>
@@ -126,6 +134,15 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   buttonText: { color: "#fff", fontWeight: "600", fontSize: 16 },
+  secondaryButton: {
+    borderWidth: 1,
+    borderColor: "#ddd",
+    borderRadius: 8,
+    padding: 14,
+    alignItems: "center",
+    marginTop: 8,
+  },
+  secondaryButtonText: { fontWeight: "600", fontSize: 16, color: "#0f172a" },
   logoutButton: { alignItems: "center", padding: 14 },
   logoutText: { color: "#dc2626", fontSize: 15 },
 });

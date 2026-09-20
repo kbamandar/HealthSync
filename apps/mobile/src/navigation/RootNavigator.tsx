@@ -4,9 +4,21 @@ import { NavigationContainer } from "@react-navigation/native";
 import { AuthProvider, useAuth } from "../auth/AuthContext";
 import { FamilyProvider } from "../family/FamilyContext";
 import InviteLinkHandler from "../family/InviteLinkHandler";
+import AppLockGate from "../screens/security/AppLockGate";
+import { AppLockProvider, useAppLock } from "../security/AppLockContext";
 import AuthFlow from "./AuthFlow";
 import MainTabs from "./MainTabs";
 import ProfileSetupScreen from "../screens/auth/ProfileSetupScreen";
+
+function AuthenticatedApp() {
+  const { isLockEnabled, isLocked } = useAppLock();
+
+  if (isLockEnabled && isLocked) {
+    return <AppLockGate />;
+  }
+
+  return <MainTabs />;
+}
 
 function Gate() {
   const { status } = useAuth();
@@ -27,7 +39,11 @@ function Gate() {
     return <ProfileSetupScreen />;
   }
 
-  return <MainTabs />;
+  return (
+    <AppLockProvider>
+      <AuthenticatedApp />
+    </AppLockProvider>
+  );
 }
 
 export default function RootNavigator() {

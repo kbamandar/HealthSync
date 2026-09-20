@@ -4,7 +4,12 @@ export type AuditEventType =
   | "link.create"
   | "link.access"
   | "member.invite"
-  | "login.otp";
+  | "login.otp"
+  | "auth.logout"
+  | "session.revoke"
+  | "data_export.requested"
+  | "account_deletion.requested"
+  | "account_deletion.cancelled";
 
 export interface AuditEvent {
   id: number;
