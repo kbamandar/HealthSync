@@ -1,0 +1,15 @@
+{
+  "default_branch": "claude/kind-cori-fuc8zv",
+  "branches": [
+    "claude/kind-cori-fuc8zv",
+    "main"
+  ],
+  "parent": {
+    "claude/kind-cori-fuc8zv": null,
+    "main": "claude/kind-cori-fuc8zv"
+  },
+  "order": [
+    "claude/kind-cori-fuc8zv",
+    "main"
+  ]
+}
