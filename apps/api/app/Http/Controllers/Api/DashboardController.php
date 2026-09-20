@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Responses\ApiResponse;
 use App\Models\FamilyMember;
 use App\Models\HealthRecord;
+use App\Models\Reminder;
 use App\Models\VitalReading;
 use App\Services\Family\FamilyGroupProvisioner;
 use App\Services\Vitals\VitalThresholdService;
@@ -89,6 +90,21 @@ class DashboardController extends Controller
         $filledFields = collect(self::PROFILE_FIELDS)->filter(fn ($field) => filled($user->{$field}))->count();
         $profileCompletePercent = (int) round(($filledFields / count(self::PROFILE_FIELDS)) * 100);
 
+        $upcomingReminders = Reminder::query()
+            ->where('family_group_id', $group->id)
+            ->active()
+            ->where('due_at', '>=', now())
+            ->orderBy('due_at')
+            ->limit(5)
+            ->get()
+            ->map(fn (Reminder $r) => [
+                'id' => $r->id,
+                'reminder_type' => $r->reminder_type,
+                'title' => $r->title,
+                'member_id' => $r->member_id,
+                'due_at' => $r->due_at->toIso8601String(),
+            ]);
+
         return ApiResponse::success([
             'stats' => [
                 'records_this_month' => HealthRecord::query()
@@ -102,6 +118,7 @@ class DashboardController extends Controller
             'recent_records' => $recentRecords,
             'latest_vitals' => $latestVitals,
             'family_summary' => $familySummary,
+            'upcoming_reminders' => $upcomingReminders,
         ]);
     }
 

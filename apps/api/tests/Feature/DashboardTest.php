@@ -60,6 +60,31 @@ class DashboardTest extends TestCase
         $response->assertJsonPath('data.family_summary.0.pending_count', 1);
     }
 
+    public function test_dashboard_includes_upcoming_reminders_but_not_past_or_inactive_ones(): void
+    {
+        $user = User::factory()->create(['name' => 'Mandar Owner']);
+        $memberId = $this->selfMemberId($user);
+
+        $this->postJson('/api/v1/reminders', [
+            'member_id' => $memberId,
+            'reminder_type' => 'medication',
+            'title' => 'Metformin 500mg',
+            'due_at' => now()->addHours(2)->toIso8601String(),
+        ], $this->authHeaders($user));
+
+        $this->postJson('/api/v1/reminders', [
+            'member_id' => $memberId,
+            'reminder_type' => 'appointment',
+            'title' => 'Already past',
+            'due_at' => now()->subDay()->toIso8601String(),
+        ], $this->authHeaders($user));
+
+        $response = $this->getJson('/api/v1/dashboard', $this->authHeaders($user))->assertOk();
+
+        $response->assertJsonCount(1, 'data.upcoming_reminders');
+        $response->assertJsonPath('data.upcoming_reminders.0.title', 'Metformin 500mg');
+    }
+
     public function test_dashboard_scopes_to_the_callers_own_family_group(): void
     {
         $owner = User::factory()->create(['name' => 'Mandar Owner']);

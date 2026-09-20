@@ -1,6 +1,7 @@
 import { useCallback, useState } from "react";
-import { ActivityIndicator, FlatList, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, FlatList, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
+import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 
 import { dashboardApi } from "../api/dashboardApi";
 import type { Dashboard } from "../api/types";
@@ -8,6 +9,8 @@ import { useAuth } from "../auth/AuthContext";
 import Avatar from "../components/Avatar";
 import Badge from "../components/Badge";
 import { CATEGORY_LABELS } from "../records/categories";
+import { REMINDER_TYPE_LABELS } from "../reminders/reminderTypes";
+import type { HomeStackParamList } from "../navigation/HomeStack";
 
 function greeting(): string {
   const hour = new Date().getHours();
@@ -16,7 +19,9 @@ function greeting(): string {
   return "Good evening";
 }
 
-export default function HomeDashboardScreen() {
+type Props = NativeStackScreenProps<HomeStackParamList, "HomeDashboard">;
+
+export default function HomeDashboardScreen({ navigation }: Props) {
   const { user } = useAuth();
   const [dashboard, setDashboard] = useState<Dashboard | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -81,6 +86,32 @@ export default function HomeDashboardScreen() {
             </View>
           </View>
 
+          <View style={styles.sectionHeaderRow}>
+            <Text style={styles.sectionLabel}>Upcoming reminders</Text>
+            <TouchableOpacity onPress={() => navigation.navigate("Reminders")}>
+              <Text style={styles.seeAll}>See all</Text>
+            </TouchableOpacity>
+          </View>
+          {dashboard.upcoming_reminders.length === 0 ? (
+            <Text style={styles.emptyText}>Nothing coming up.</Text>
+          ) : (
+            dashboard.upcoming_reminders.map((reminder) => (
+              <View key={reminder.id} style={styles.reminderRow}>
+                <View style={styles.recordTextCol}>
+                  <Text style={styles.recordTitle}>{reminder.title}</Text>
+                  <Text style={styles.recordCategory}>{REMINDER_TYPE_LABELS[reminder.reminder_type]}</Text>
+                </View>
+                <Text style={styles.recordDate}>
+                  {new Date(reminder.due_at).toLocaleString(undefined, {
+                    weekday: "short",
+                    hour: "numeric",
+                    minute: "2-digit",
+                  })}
+                </Text>
+              </View>
+            ))
+          )}
+
           <Text style={styles.sectionLabel}>Recent records</Text>
         </View>
       }
@@ -133,6 +164,17 @@ const styles = StyleSheet.create({
   statValueWarning: { color: "#92400e" },
   statLabel: { fontSize: 11, color: "#666" },
   sectionLabel: { fontSize: 16, fontWeight: "700" },
+  sectionHeaderRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+  seeAll: { fontSize: 13, color: "#0f766e", fontWeight: "600" },
+  reminderRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    backgroundColor: "#fff",
+    borderRadius: 10,
+    padding: 14,
+    marginBottom: 10,
+  },
   recordRow: {
     flexDirection: "row",
     justifyContent: "space-between",

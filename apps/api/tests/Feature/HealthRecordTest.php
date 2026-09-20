@@ -3,7 +3,6 @@
 namespace Tests\Feature;
 
 use App\Models\FamilyMember;
-use App\Models\HealthRecord;
 use App\Models\User;
 use App\Services\Auth\TokenService;
 use Illuminate\Foundation\Testing\RefreshDatabase;

@@ -74,4 +74,8 @@ export const recordsApi = {
   restore(id: string) {
     return apiRequest<HealthRecord>(`/records/${id}/restore`, { method: "POST" });
   },
+
+  applyOcr(id: string) {
+    return apiRequest<HealthRecord>(`/records/${id}/apply-ocr`, { method: "POST" });
+  },
 };

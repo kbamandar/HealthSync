@@ -9,6 +9,7 @@ import UploadRecordScreen from "../screens/records/UploadRecordScreen";
 import RecordDetailScreen from "../screens/records/RecordDetailScreen";
 import EditRecordScreen from "../screens/records/EditRecordScreen";
 import RecycleBinScreen from "../screens/records/RecycleBinScreen";
+import OcrResultsScreen from "../screens/records/OcrResultsScreen";
 
 export type RecordsStackParamList = {
   RecordsList: undefined;
@@ -16,6 +17,7 @@ export type RecordsStackParamList = {
   RecordDetail: { id: string };
   EditRecord: { id: string };
   RecycleBin: undefined;
+  OcrResults: { id: string };
 };
 
 const Stack = createNativeStackNavigator<RecordsStackParamList>();
@@ -45,6 +47,7 @@ export default function RecordsStack() {
       <Stack.Screen name="RecordDetail" component={RecordDetailScreen} options={{ title: "Record" }} />
       <Stack.Screen name="EditRecord" component={EditRecordScreen} options={{ title: "Edit record" }} />
       <Stack.Screen name="RecycleBin" component={RecycleBinScreen} options={{ title: "Recycle bin" }} />
+      <Stack.Screen name="OcrResults" component={OcrResultsScreen} options={{ title: "Extracted data" }} />
     </Stack.Navigator>
   );
 }

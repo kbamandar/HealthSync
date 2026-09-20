@@ -164,6 +164,12 @@ export default function RecordDetailScreen({ route, navigation }: Props) {
         </View>
       </View>
 
+      {file?.ocr_extracted && (
+        <TouchableOpacity style={styles.ocrButton} onPress={() => navigation.navigate("OcrResults", { id: record.id })}>
+          <Text style={styles.ocrButtonText}>View extracted data</Text>
+        </TouchableOpacity>
+      )}
+
       <TouchableOpacity style={styles.editButton} onPress={() => navigation.navigate("EditRecord", { id: record.id })}>
         <Text style={styles.editButtonText}>Edit record</Text>
       </TouchableOpacity>
@@ -205,6 +211,14 @@ const styles = StyleSheet.create({
     fontSize: 12,
     minWidth: 100,
   },
+  ocrButton: {
+    backgroundColor: "#f0fdfa",
+    borderRadius: 8,
+    padding: 14,
+    alignItems: "center",
+    marginTop: 8,
+  },
+  ocrButtonText: { fontSize: 15, fontWeight: "600", color: "#0f766e" },
   editButton: { borderWidth: 1, borderColor: "#ddd", borderRadius: 8, padding: 14, alignItems: "center", marginTop: 8 },
   editButtonText: { fontSize: 16, fontWeight: "600" },
   deleteButton: { alignItems: "center", padding: 14 },

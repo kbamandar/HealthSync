@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Responses\ApiResponse;
+use App\Jobs\ExtractRecordFileOcr;
 use App\Models\AuditEvent;
 use App\Models\FamilyMember;
 use App\Models\HealthRecord;
@@ -11,6 +12,7 @@ use App\Models\RecordFile;
 use App\Services\Family\FamilyGroupProvisioner;
 use App\Services\Records\RecordStorageService;
 use App\Services\Records\VirusScanService;
+use App\Services\Reminders\VaccinationReminderSuggester;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 
@@ -26,6 +28,7 @@ class HealthRecordController extends Controller
         private readonly FamilyGroupProvisioner $familyGroups,
         private readonly RecordStorageService $storage,
         private readonly VirusScanService $virusScan,
+        private readonly VaccinationReminderSuggester $vaccinationReminders,
     ) {}
 
     public function index(Request $request)
@@ -116,6 +119,8 @@ class HealthRecordController extends Controller
         ]);
 
         AuditEvent::record('record.upload', $request->user()->id, $request, ['health_record_id' => $record->id]);
+
+        $this->vaccinationReminders->suggestFor($record);
 
         return ApiResponse::success($this->serialize($record));
     }
@@ -238,7 +243,47 @@ class HealthRecordController extends Controller
             'record_file_id' => $file->id,
         ]);
 
+        ExtractRecordFileOcr::dispatch($file->id);
+
         return ApiResponse::success($this->serializeFile($file));
+    }
+
+    public function applyOcrData(Request $request, string $id)
+    {
+        $record = $this->findOwnedRecord($request, $id);
+
+        if (! $record) {
+            return ApiResponse::error('NOT_FOUND', 'Health record not found.', status: 404);
+        }
+
+        $file = $record->files()->where('ocr_extracted', true)->latest('created_at')->first();
+
+        if (! $file || empty($file->ocr_data['fields'] ?? null)) {
+            return ApiResponse::error('OCR_NOT_READY', 'No extracted data is available for this record yet.', status: 422);
+        }
+
+        $fields = $file->ocr_data['fields'];
+        $updates = [];
+
+        if (! $record->record_date && ! empty($fields['record_date'])) {
+            $updates['record_date'] = $fields['record_date'];
+        }
+
+        if (! $record->hospital_clinic && ! empty($fields['lab_name'])) {
+            $updates['hospital_clinic'] = $fields['lab_name'];
+        }
+
+        if (! $record->notes && ! empty($fields['test_values'])) {
+            $updates['notes'] = collect($fields['test_values'])
+                ->map(fn (array $t) => $t['name'].': '.$t['value'].($t['unit'] ? ' '.$t['unit'] : ''))
+                ->implode("\n");
+        }
+
+        if ($updates !== []) {
+            $record->update($updates);
+        }
+
+        return ApiResponse::success($this->serialize($record, withFiles: true));
     }
 
     public function recycleBin(Request $request)
@@ -310,6 +355,8 @@ class HealthRecordController extends Controller
             'mime_type' => $file->mime_type,
             'file_size_bytes' => $file->file_size_bytes,
             'download_url' => $this->storage->createDownloadUrl($file->s3_key),
+            'ocr_extracted' => $file->ocr_extracted,
+            'ocr_data' => $file->ocr_data,
             'created_at' => $file->created_at?->toIso8601String(),
         ];
     }

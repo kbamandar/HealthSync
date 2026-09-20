@@ -74,12 +74,29 @@ export type RecordCategory =
   | "fitness_lifestyle"
   | "other";
 
+export interface OcrTestValue {
+  name: string;
+  value: number;
+  unit: string | null;
+}
+
+export interface OcrData {
+  raw_text: string | null;
+  fields: {
+    record_date: string | null;
+    lab_name: string | null;
+    test_values: OcrTestValue[];
+  };
+}
+
 export interface RecordFile {
   id: string;
   file_type: "pdf" | "jpg" | "png";
   mime_type: string | null;
   file_size_bytes: number | null;
   download_url: string;
+  ocr_extracted: boolean;
+  ocr_data: OcrData | null;
   created_at: string | null;
 }
 
@@ -157,6 +174,14 @@ export interface DashboardFamilySummary {
   pending_count: number;
 }
 
+export interface DashboardUpcomingReminder {
+  id: string;
+  reminder_type: ReminderType;
+  title: string;
+  member_id: string;
+  due_at: string;
+}
+
 export interface Dashboard {
   stats: {
     records_this_month: number;
@@ -166,4 +191,24 @@ export interface Dashboard {
   recent_records: DashboardRecentRecord[];
   latest_vitals: DashboardLatestVital[];
   family_summary: DashboardFamilySummary[];
+  upcoming_reminders: DashboardUpcomingReminder[];
+}
+
+export type ReminderType = "medication" | "appointment" | "vaccination" | "annual_checkup" | "lab_repeat";
+export type RecurrenceType = "daily" | "weekly" | "monthly" | "custom";
+export type NotifyChannel = "push" | "sms" | "whatsapp" | "email";
+
+export interface Reminder {
+  id: string;
+  member_id: string;
+  reminder_type: ReminderType;
+  title: string;
+  description: string | null;
+  due_at: string;
+  recurrence: RecurrenceType | null;
+  notify_via: NotifyChannel[];
+  is_active: boolean;
+  last_sent_at: string | null;
+  linked_record_id: string | null;
+  created_at: string;
 }

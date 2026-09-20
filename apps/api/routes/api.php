@@ -6,12 +6,12 @@ use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\DoctorController;
 use App\Http\Controllers\Api\FamilyMemberController;
 use App\Http\Controllers\Api\HealthRecordController;
-use App\Http\Controllers\Internal\RecordFileTransferController;
 use App\Http\Controllers\Api\ReminderController;
 use App\Http\Controllers\Api\SearchController;
 use App\Http\Controllers\Api\SharedLinkController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\VitalReadingController;
+use App\Http\Controllers\Internal\RecordFileTransferController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function () {
@@ -47,6 +47,7 @@ Route::prefix('v1')->middleware('auth.jwt')->group(function () {
     Route::post('records/{id}/upload-url', [HealthRecordController::class, 'uploadUrl']);
     Route::post('records/{id}/files', [HealthRecordController::class, 'registerFile']);
     Route::post('records/{id}/restore', [HealthRecordController::class, 'restore']);
+    Route::post('records/{id}/apply-ocr', [HealthRecordController::class, 'applyOcrData']);
 
     // VITALS
     Route::get('vitals', [VitalReadingController::class, 'index']);
