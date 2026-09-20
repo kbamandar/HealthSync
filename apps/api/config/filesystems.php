@@ -60,6 +60,18 @@ return [
             'report' => false,
         ],
 
+        // Stands in for the S3 bucket the plan specifies. Never public — health
+        // record files are only ever served through the app's own signed,
+        // short-lived download routes (see RecordStorageService), the same way
+        // real S3 objects would only ever be reachable through presigned URLs.
+        'health-records' => [
+            'driver' => 'local',
+            'root' => storage_path('app/health-records'),
+            'serve' => false,
+            'throw' => true,
+            'report' => false,
+        ],
+
     ],
 
     /*
