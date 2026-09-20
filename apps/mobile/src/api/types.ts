@@ -105,3 +105,65 @@ export interface RecordUploadUrl {
   s3_key: string;
   expires_in: number;
 }
+
+export type VitalType =
+  | "bp_systolic"
+  | "bp_diastolic"
+  | "sugar_fasting"
+  | "sugar_pp"
+  | "sugar_random"
+  | "hba1c"
+  | "weight"
+  | "bmi"
+  | "heart_rate"
+  | "spo2"
+  | "temperature";
+
+export type VitalZone = "normal" | "borderline" | "abnormal";
+
+export interface VitalReading {
+  id: string;
+  member_id: string;
+  vital_type: VitalType;
+  value: number;
+  unit: string;
+  reading_context: string | null;
+  notes: string | null;
+  recorded_at: string;
+  is_abnormal: boolean;
+  zone: VitalZone;
+}
+
+export interface DashboardRecentRecord {
+  id: string;
+  category: RecordCategory;
+  title: string | null;
+  record_date: string | null;
+  created_at: string;
+}
+
+export interface DashboardLatestVital {
+  vital_type: VitalType;
+  value: number;
+  unit: string;
+  zone: VitalZone;
+  recorded_at: string;
+}
+
+export interface DashboardFamilySummary {
+  member_id: string;
+  display_name: string;
+  relationship: FamilyRelationship;
+  pending_count: number;
+}
+
+export interface Dashboard {
+  stats: {
+    records_this_month: number;
+    vitals_needing_attention: number;
+    profile_complete_percent: number;
+  };
+  recent_records: DashboardRecentRecord[];
+  latest_vitals: DashboardLatestVital[];
+  family_summary: DashboardFamilySummary[];
+}

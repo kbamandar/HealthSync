@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Responses\ApiResponse;
+use App\Models\Device;
 use App\Services\Family\FamilyGroupProvisioner;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -62,6 +63,18 @@ class UserController extends Controller
 
     public function registerDevice(Request $request)
     {
+        $data = $request->validate([
+            'push_token' => ['required', 'string', 'max:4096'],
+            'platform' => ['required', 'string', 'in:ios,android'],
+        ]);
+
+        // Storage only — this sandbox has no Firebase project, so there is
+        // no FCM sender wired up to actually deliver pushes to these tokens.
+        Device::updateOrCreate(
+            ['push_token' => $data['push_token']],
+            ['user_id' => $request->user()->id, 'platform' => $data['platform']],
+        );
+
         return ApiResponse::success();
     }
 
