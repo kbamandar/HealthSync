@@ -11,15 +11,18 @@ use App\Http\Controllers\Api\SearchController;
 use App\Http\Controllers\Api\SharedLinkController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\VitalReadingController;
+use App\Http\Controllers\Internal\RecordFileTransferController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function () {
-    // AUTH
+    // AUTH (public — these are how you obtain/refresh/drop credentials)
     Route::post('auth/otp/send', [AuthController::class, 'sendOtp']);
     Route::post('auth/otp/verify', [AuthController::class, 'verifyOtp']);
     Route::post('auth/refresh', [AuthController::class, 'refresh']);
     Route::post('auth/logout', [AuthController::class, 'logout']);
+});
 
+Route::prefix('v1')->middleware('auth.jwt')->group(function () {
     // USERS
     Route::get('users/me', [UserController::class, 'me']);
     Route::put('users/me', [UserController::class, 'updateMe']);
@@ -44,6 +47,7 @@ Route::prefix('v1')->group(function () {
     Route::post('records/{id}/upload-url', [HealthRecordController::class, 'uploadUrl']);
     Route::post('records/{id}/files', [HealthRecordController::class, 'registerFile']);
     Route::post('records/{id}/restore', [HealthRecordController::class, 'restore']);
+    Route::post('records/{id}/apply-ocr', [HealthRecordController::class, 'applyOcrData']);
 
     // VITALS
     Route::get('vitals', [VitalReadingController::class, 'index']);
@@ -83,4 +87,14 @@ Route::prefix('v1')->group(function () {
 });
 
 // Public: no auth required
-Route::get('public/share/{token}', [SharedLinkController::class, 'publicAccess']);
+Route::get('public/share/{token}', [SharedLinkController::class, 'publicAccess'])->name('public.share');
+
+// Stand-ins for S3 presigned URLs (see RecordStorageService) — gated by the
+// `signed` middleware alone, exactly as a presigned S3 URL is gated by its
+// own signature and nothing else.
+Route::middleware('signed')->group(function () {
+    Route::put('internal/records/upload/{key}', [RecordFileTransferController::class, 'upload'])
+        ->name('internal.records.upload');
+    Route::get('internal/records/download/{key}', [RecordFileTransferController::class, 'download'])
+        ->name('internal.records.download');
+});
