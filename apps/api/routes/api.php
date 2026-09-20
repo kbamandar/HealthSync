@@ -87,7 +87,7 @@ Route::prefix('v1')->middleware('auth.jwt')->group(function () {
 });
 
 // Public: no auth required
-Route::get('public/share/{token}', [SharedLinkController::class, 'publicAccess']);
+Route::get('public/share/{token}', [SharedLinkController::class, 'publicAccess'])->name('public.share');
 
 // Stand-ins for S3 presigned URLs (see RecordStorageService) — gated by the
 // `signed` middleware alone, exactly as a presigned S3 URL is gated by its

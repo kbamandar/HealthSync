@@ -61,6 +61,18 @@ export default function HomeDashboardScreen({ navigation }: Props) {
             {user?.name ? `, ${user.name.split(" ")[0]}` : ""}
           </Text>
 
+          <View style={styles.quickAccessRow}>
+            <TouchableOpacity style={styles.quickAccessButton} onPress={() => navigation.navigate("Timeline")}>
+              <Text style={styles.quickAccessText}>Timeline</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.quickAccessButton} onPress={() => navigation.navigate("Search")}>
+              <Text style={styles.quickAccessText}>Search</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.quickAccessButton} onPress={() => navigation.navigate("ManageSharedLinks")}>
+              <Text style={styles.quickAccessText}>Shared links</Text>
+            </TouchableOpacity>
+          </View>
+
           <View style={styles.glanceCard}>
             <Text style={styles.glanceTitle}>Health at a glance</Text>
             <View style={styles.statRow}>
@@ -155,6 +167,15 @@ const styles = StyleSheet.create({
   emptyText: { color: "#888" },
   headerSection: { gap: 14 },
   greeting: { fontSize: 22, fontWeight: "700" },
+  quickAccessRow: { flexDirection: "row", gap: 10 },
+  quickAccessButton: {
+    flex: 1,
+    backgroundColor: "#fff",
+    borderRadius: 10,
+    paddingVertical: 10,
+    alignItems: "center",
+  },
+  quickAccessText: { fontSize: 13, fontWeight: "600", color: "#0f766e" },
   glanceCard: { backgroundColor: "#fff", borderRadius: 12, padding: 14, gap: 10 },
   glanceTitle: { fontSize: 15, fontWeight: "700" },
   statRow: { flexDirection: "row", gap: 10 },

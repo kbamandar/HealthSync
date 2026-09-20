@@ -15,8 +15,10 @@ import { useFocusEffect } from "@react-navigation/native";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 
 import Badge from "../../components/Badge";
+import ShareOptionsModal from "../../components/ShareOptionsModal";
 import { recordsApi } from "../../api/recordsApi";
-import type { HealthRecord } from "../../api/types";
+import { sharingApi } from "../../api/sharingApi";
+import type { HealthRecord, SharedLinkWithQr } from "../../api/types";
 import { CATEGORY_LABELS } from "../../records/categories";
 import type { RecordsStackParamList } from "../../navigation/RecordsStack";
 
@@ -28,6 +30,8 @@ export default function RecordDetailScreen({ route, navigation }: Props) {
   const [isLoading, setIsLoading] = useState(true);
   const [isAddingTag, setIsAddingTag] = useState(false);
   const [newTag, setNewTag] = useState("");
+  const [shareLink, setShareLink] = useState<SharedLinkWithQr | null>(null);
+  const [isSharing, setIsSharing] = useState(false);
 
   const load = useCallback(async () => {
     setIsLoading(true);
@@ -60,6 +64,16 @@ export default function RecordDetailScreen({ route, navigation }: Props) {
     setRecord((current) => (current ? { ...current, custom_tags: updated.custom_tags } : current));
     setNewTag("");
     setIsAddingTag(false);
+  }
+
+  async function handleShare() {
+    if (!record) return;
+    setIsSharing(true);
+    try {
+      setShareLink(await sharingApi.shareRecord(record.id));
+    } finally {
+      setIsSharing(false);
+    }
   }
 
   function confirmDelete() {
@@ -108,9 +122,14 @@ export default function RecordDetailScreen({ route, navigation }: Props) {
         <View style={styles.categoryPill}>
           <Text style={styles.categoryPillText}>{CATEGORY_LABELS[record.category]}</Text>
         </View>
-        <TouchableOpacity onPress={toggleFavourite}>
-          <Text style={styles.star}>{record.is_favourite ? "★" : "☆"}</Text>
-        </TouchableOpacity>
+        <View style={styles.headerActions}>
+          <TouchableOpacity onPress={handleShare} disabled={isSharing}>
+            {isSharing ? <ActivityIndicator size="small" /> : <Text style={styles.shareIcon}>Share</Text>}
+          </TouchableOpacity>
+          <TouchableOpacity onPress={toggleFavourite}>
+            <Text style={styles.star}>{record.is_favourite ? "★" : "☆"}</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       <Text style={styles.title}>{record.title || "Untitled record"}</Text>
@@ -177,6 +196,8 @@ export default function RecordDetailScreen({ route, navigation }: Props) {
       <TouchableOpacity style={styles.deleteButton} onPress={confirmDelete}>
         <Text style={styles.deleteText}>Delete record</Text>
       </TouchableOpacity>
+
+      <ShareOptionsModal visible={shareLink !== null} link={shareLink} onClose={() => setShareLink(null)} />
     </ScrollView>
   );
 }
@@ -194,8 +215,10 @@ const styles = StyleSheet.create({
   },
   filePreviewText: { color: "#0f766e", fontWeight: "600" },
   headerRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+  headerActions: { flexDirection: "row", alignItems: "center", gap: 16 },
   categoryPill: { borderWidth: 1, borderColor: "#ddd", borderRadius: 20, paddingVertical: 4, paddingHorizontal: 12 },
   categoryPillText: { fontSize: 12, color: "#333" },
+  shareIcon: { fontSize: 14, fontWeight: "600", color: "#0f766e" },
   star: { fontSize: 24, color: "#d97706" },
   title: { fontSize: 22, fontWeight: "700" },
   field: { gap: 4 },

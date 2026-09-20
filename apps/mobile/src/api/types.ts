@@ -212,3 +212,53 @@ export interface Reminder {
   linked_record_id: string | null;
   created_at: string;
 }
+
+export interface SearchResultGroup {
+  category: RecordCategory;
+  records: {
+    id: string;
+    title: string | null;
+    notes: string | null;
+    record_date: string | null;
+  }[];
+}
+
+export interface TimelineEntry {
+  id: string;
+  kind: "record" | "vital";
+  sub_type: string;
+  title: string | null;
+  value: number | null;
+  unit: string | null;
+  is_abnormal: boolean | null;
+  event_date: string;
+  member_id: string;
+  member_name: string | null;
+}
+
+export type SharedLinkType = "record" | "health_summary";
+
+export interface SharedLink {
+  id: string;
+  link_type: SharedLinkType;
+  label: string;
+  url: string;
+  expires_at: string;
+  access_count: number;
+  max_access: number | null;
+  is_revoked: boolean;
+  created_at: string;
+}
+
+export interface SharedLinkWithQr extends SharedLink {
+  qr_code_svg: string;
+}
+
+export interface PublicSharedRecord {
+  title: string | null;
+  category: RecordCategory;
+  record_date: string | null;
+  doctor_name: string | null;
+  hospital_clinic: string | null;
+  files: { file_type: "pdf" | "jpg" | "png"; download_url: string }[];
+}

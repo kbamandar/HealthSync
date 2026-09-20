@@ -3,9 +3,11 @@ import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, TextInput, Touc
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 
 import Badge from "../../components/Badge";
+import ShareOptionsModal from "../../components/ShareOptionsModal";
+import { sharingApi } from "../../api/sharingApi";
 import { useFamily } from "../../family/FamilyContext";
 import type { FamilyStackParamList } from "../../navigation/FamilyStack";
-import type { AccessLevel } from "../../api/types";
+import type { AccessLevel, SharedLinkWithQr } from "../../api/types";
 
 const ACCESS_LEVELS: { value: AccessLevel; label: string }[] = [
   { value: "full_access", label: "Full access" },
@@ -23,6 +25,8 @@ export default function MemberDetailScreen({ route, navigation }: Props) {
   const [accessLevel, setAccessLevel] = useState<AccessLevel>(member?.access_level ?? "self_only");
   const [isSaving, setIsSaving] = useState(false);
   const [isRemoving, setIsRemoving] = useState(false);
+  const [shareLink, setShareLink] = useState<SharedLinkWithQr | null>(null);
+  const [isSharing, setIsSharing] = useState(false);
 
   useEffect(() => {
     if (member) {
@@ -48,6 +52,15 @@ export default function MemberDetailScreen({ route, navigation }: Props) {
       await updateMember(currentMember.id, { display_name: displayName.trim(), access_level: accessLevel });
     } finally {
       setIsSaving(false);
+    }
+  }
+
+  async function handleShare() {
+    setIsSharing(true);
+    try {
+      setShareLink(await sharingApi.shareSummary(currentMember.id));
+    } finally {
+      setIsSharing(false);
     }
   }
 
@@ -116,6 +129,16 @@ export default function MemberDetailScreen({ route, navigation }: Props) {
           {isRemoving ? <ActivityIndicator color="#dc2626" /> : <Text style={styles.removeText}>Remove from family</Text>}
         </TouchableOpacity>
       )}
+
+      <TouchableOpacity style={styles.shareButton} onPress={handleShare} disabled={isSharing}>
+        {isSharing ? (
+          <ActivityIndicator color="#0f766e" />
+        ) : (
+          <Text style={styles.shareButtonText}>Share health summary</Text>
+        )}
+      </TouchableOpacity>
+
+      <ShareOptionsModal visible={shareLink !== null} link={shareLink} onClose={() => setShareLink(null)} />
     </ScrollView>
   );
 }
@@ -136,4 +159,12 @@ const styles = StyleSheet.create({
   buttonText: { color: "#fff", fontWeight: "600", fontSize: 16 },
   removeButton: { alignItems: "center", padding: 14 },
   removeText: { color: "#dc2626", fontSize: 15 },
+  shareButton: {
+    backgroundColor: "#f0fdfa",
+    borderRadius: 8,
+    padding: 14,
+    alignItems: "center",
+    marginTop: 8,
+  },
+  shareButtonText: { fontSize: 15, fontWeight: "600", color: "#0f766e" },
 });
