@@ -12,7 +12,12 @@ export default function FamilyMemberSwitcher() {
 
   return (
     <>
-      <TouchableOpacity style={styles.trigger} onPress={() => setIsOpen(true)}>
+      <TouchableOpacity
+        style={styles.trigger}
+        onPress={() => setIsOpen(true)}
+        accessibilityRole="button"
+        accessibilityLabel={`Viewing records for ${selectedMember.display_name}. Tap to switch family member.`}
+      >
         <Avatar name={selectedMember.display_name} size={28} />
       </TouchableOpacity>
 

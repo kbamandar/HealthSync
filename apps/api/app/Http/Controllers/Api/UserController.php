@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Responses\ApiResponse;
+use App\Models\AuditEvent;
 use App\Models\Device;
 use App\Services\Family\FamilyGroupProvisioner;
 use Illuminate\Http\Request;
@@ -70,6 +71,22 @@ class UserController extends Controller
 
         // Storage only — this sandbox has no Firebase project, so there is
         // no FCM sender wired up to actually deliver pushes to these tokens.
+        //
+        // push_token is globally unique (one physical install), so re-login
+        // on a shared/handed-down device legitimately reassigns it — but
+        // that reassignment must be explicit, not a silent side effect of
+        // matching on push_token alone: if the row currently belongs to a
+        // different user, drop it first rather than quietly rewriting its
+        // owner underneath whichever account still thinks it's registered.
+        $existing = Device::where('push_token', $data['push_token'])->first();
+
+        if ($existing && $existing->user_id !== $request->user()->id) {
+            AuditEvent::record('device.reassigned', $request->user()->id, $request, [
+                'previous_user_id' => $existing->user_id,
+            ]);
+            $existing->delete();
+        }
+
         Device::updateOrCreate(
             ['push_token' => $data['push_token']],
             ['user_id' => $request->user()->id, 'platform' => $data['platform']],
