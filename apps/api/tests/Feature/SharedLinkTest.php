@@ -208,6 +208,45 @@ class SharedLinkTest extends TestCase
         $this->assertFalse(SharedLink::findOrFail($linkId)->is_revoked);
     }
 
+    public function test_public_access_rejects_a_link_whose_record_was_since_deleted(): void
+    {
+        $user = User::factory()->create(['name' => 'Mandar Owner']);
+        $memberId = $this->selfMemberId($user);
+
+        $recordId = $this->postJson('/api/v1/records', [
+            'member_id' => $memberId,
+            'category' => 'lab_report',
+        ], $this->authHeaders($user))->json('data.id');
+
+        $link = $this->postJson('/api/v1/share/record', ['record_id' => $recordId], $this->authHeaders($user))
+            ->json('data');
+
+        $this->deleteJson("/api/v1/records/{$recordId}", [], $this->authHeaders($user))->assertOk();
+
+        $path = parse_url($link['url'], PHP_URL_PATH);
+        $this->getJson($path)->assertStatus(404)->assertJsonPath('error.code', 'LINK_INVALID');
+    }
+
+    public function test_public_access_rejects_a_health_summary_link_whose_member_was_since_removed(): void
+    {
+        $owner = User::factory()->create(['name' => 'Mandar Owner']);
+        $this->selfMemberId($owner);
+
+        $childId = $this->postJson('/api/v1/family/members', [
+            'relationship' => 'child',
+            'display_name' => 'Aarav',
+            'is_guardian_managed' => true,
+        ], $this->authHeaders($owner))->json('data.id');
+
+        $link = $this->postJson('/api/v1/share/summary', ['member_id' => $childId], $this->authHeaders($owner))
+            ->json('data');
+
+        $this->deleteJson("/api/v1/family/members/{$childId}", [], $this->authHeaders($owner))->assertOk();
+
+        $path = parse_url($link['url'], PHP_URL_PATH);
+        $this->getJson($path)->assertStatus(404)->assertJsonPath('error.code', 'LINK_INVALID');
+    }
+
     public function test_unauthenticated_requests_are_rejected(): void
     {
         $this->getJson('/api/v1/share')->assertStatus(401);

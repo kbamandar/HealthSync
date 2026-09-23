@@ -126,7 +126,11 @@ export default function RecordDetailScreen({ route, navigation }: Props) {
           <TouchableOpacity onPress={handleShare} disabled={isSharing}>
             {isSharing ? <ActivityIndicator size="small" /> : <Text style={styles.shareIcon}>Share</Text>}
           </TouchableOpacity>
-          <TouchableOpacity onPress={toggleFavourite}>
+          <TouchableOpacity
+            onPress={toggleFavourite}
+            accessibilityRole="button"
+            accessibilityLabel={record.is_favourite ? "Remove from favourites" : "Add to favourites"}
+          >
             <Text style={styles.star}>{record.is_favourite ? "★" : "☆"}</Text>
           </TouchableOpacity>
         </View>

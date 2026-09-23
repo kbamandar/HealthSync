@@ -9,6 +9,7 @@ use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
+use Sentry\Laravel\Integration;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 return Application::configure(basePath: dirname(__DIR__))
@@ -58,4 +59,9 @@ return Application::configure(basePath: dirname(__DIR__))
                 return ApiResponse::error('NOT_FOUND', 'The requested resource was not found.', status: 404);
             }
         });
+
+        // No-ops when SENTRY_LARAVEL_DSN is blank (the default here — no live
+        // Sentry project exists in this sandbox), but wires real reporting
+        // the moment a production DSN is configured.
+        Integration::handles($exceptions);
     })->create();

@@ -52,6 +52,22 @@ class ComplianceTest extends TestCase
         $this->assertDatabaseHas('audit_events', ['user_id' => $user->id, 'event_type' => 'data_export.requested']);
     }
 
+    public function test_data_export_is_throttled_well_under_ten_requests_per_day(): void
+    {
+        Mail::fake();
+
+        $user = User::factory()->create(['name' => 'Mandar Owner', 'email' => 'export@example.com']);
+        $headers = $this->authHeaders($user);
+
+        $statuses = [];
+        for ($i = 0; $i < 10; $i++) {
+            $statuses[] = $this->postJson('/api/v1/data-export', [], $headers)->getStatusCode();
+        }
+
+        $this->assertContains(429, $statuses, 'Expected the data-export endpoint to throttle within 10 requests.');
+        $this->assertSame(429, end($statuses), 'Expected throttling to still be in effect on the final attempt.');
+    }
+
     public function test_account_deletion_can_be_requested_and_cancelled(): void
     {
         $user = User::factory()->create(['name' => 'Mandar Owner']);
