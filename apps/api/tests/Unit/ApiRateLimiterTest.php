@@ -42,4 +42,25 @@ class ApiRateLimiterTest extends TestCase
 
         $this->assertSame('203.0.113.5', $limit->key);
     }
+
+    /**
+     * file-uploads is applied per-route (not disabled in testing), but 60/hr
+     * is too many requests to fire in a fast test — this checks the
+     * registered definition instead of exhausting the real limit.
+     */
+    public function test_file_uploads_limiter_allows_a_generous_hourly_batch(): void
+    {
+        $user = new User(['id' => 'user-123']);
+        $user->id = 'user-123';
+
+        $request = Request::create('/api/v1/records/some-id/files');
+        $request->setUserResolver(fn () => $user);
+
+        $limits = RateLimiter::limiter('file-uploads')($request);
+        $limit = is_array($limits) ? $limits[0] : $limits;
+
+        $this->assertSame('user-123', $limit->key);
+        $this->assertSame(60, $limit->maxAttempts);
+        $this->assertSame(3600, $limit->decaySeconds);
+    }
 }

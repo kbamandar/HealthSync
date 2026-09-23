@@ -51,12 +51,30 @@ class SharedLink extends Model
         return $this->belongsTo(FamilyMember::class, 'member_id');
     }
 
+    /**
+     * Checked live (not just at share time) so a link automatically stops
+     * working the moment its underlying record is deleted or its member is
+     * removed from the family group — without needing every delete/removal
+     * code path to remember to also revoke associated links.
+     */
     public function isUsable(): bool
     {
         if ($this->is_revoked || $this->expires_at->isPast()) {
             return false;
         }
 
-        return $this->max_access === null || $this->access_count < $this->max_access;
+        if ($this->max_access !== null && $this->access_count >= $this->max_access) {
+            return false;
+        }
+
+        if ($this->link_type === 'record') {
+            return $this->record !== null && ! $this->record->is_deleted;
+        }
+
+        if ($this->link_type === 'health_summary') {
+            return $this->member !== null && $this->member->removed_at === null;
+        }
+
+        return true;
     }
 }

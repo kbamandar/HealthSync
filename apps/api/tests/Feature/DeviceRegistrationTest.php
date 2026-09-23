@@ -52,6 +52,32 @@ class DeviceRegistrationTest extends TestCase
         $this->assertSame(1, Device::where('push_token', 'same-token')->count());
     }
 
+    public function test_registering_a_token_already_owned_by_another_user_reassigns_it_explicitly(): void
+    {
+        $firstUser = User::factory()->create(['name' => 'Mandar Owner']);
+        $secondUser = User::factory()->create(['name' => 'Priya Owner']);
+
+        $this->postJson('/api/v1/devices', [
+            'push_token' => 'shared-device-token',
+            'platform' => 'android',
+        ], $this->authHeaders($firstUser))->assertOk();
+
+        $this->postJson('/api/v1/devices', [
+            'push_token' => 'shared-device-token',
+            'platform' => 'android',
+        ], $this->authHeaders($secondUser))->assertOk();
+
+        $this->assertSame(1, Device::where('push_token', 'shared-device-token')->count());
+        $this->assertDatabaseHas('devices', [
+            'push_token' => 'shared-device-token',
+            'user_id' => $secondUser->id,
+        ]);
+        $this->assertDatabaseHas('audit_events', [
+            'user_id' => $secondUser->id,
+            'event_type' => 'device.reassigned',
+        ]);
+    }
+
     public function test_rejects_an_unknown_platform(): void
     {
         $user = User::factory()->create(['name' => 'Mandar Owner']);

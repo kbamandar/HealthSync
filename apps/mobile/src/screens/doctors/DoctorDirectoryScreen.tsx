@@ -76,7 +76,13 @@ export default function DoctorDirectoryScreen() {
               </View>
               <View style={styles.actions}>
                 {item.phone && (
-                  <TouchableOpacity style={styles.actionIcon} onPress={() => Linking.openURL(`tel:${item.phone}`)}>
+                  <TouchableOpacity
+                    style={styles.actionIcon}
+                    onPress={() => Linking.openURL(`tel:${item.phone}`)}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Call ${item.name}`}
+                    hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
+                  >
                     <Text style={styles.actionIconText}>{"☎"}</Text>
                   </TouchableOpacity>
                 )}
@@ -84,6 +90,9 @@ export default function DoctorDirectoryScreen() {
                   <TouchableOpacity
                     style={styles.actionIcon}
                     onPress={() => Linking.openURL(`https://wa.me/${item.phone!.replace(/[^0-9]/g, "")}`)}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Message ${item.name} on WhatsApp`}
+                    hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
                   >
                     <Text style={styles.actionIconText}>{"\u{1F4AC}"}</Text>
                   </TouchableOpacity>
