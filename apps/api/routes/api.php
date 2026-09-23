@@ -47,7 +47,8 @@ Route::prefix('v1')->middleware('auth.jwt')->group(function () {
     Route::put('records/{id}', [HealthRecordController::class, 'update']);
     Route::delete('records/{id}', [HealthRecordController::class, 'destroy']);
     Route::post('records/{id}/upload-url', [HealthRecordController::class, 'uploadUrl']);
-    Route::post('records/{id}/files', [HealthRecordController::class, 'registerFile']);
+    Route::post('records/{id}/files', [HealthRecordController::class, 'registerFile'])
+        ->middleware('throttle:file-uploads');
     Route::post('records/{id}/restore', [HealthRecordController::class, 'restore']);
     Route::post('records/{id}/apply-ocr', [HealthRecordController::class, 'applyOcrData']);
 
@@ -84,7 +85,8 @@ Route::prefix('v1')->middleware('auth.jwt')->group(function () {
     Route::get('members/{id}/health-score', [DashboardController::class, 'healthScore']);
 
     // DATA & COMPLIANCE
-    Route::post('data-export', [ComplianceController::class, 'requestDataExport']);
+    Route::post('data-export', [ComplianceController::class, 'requestDataExport'])
+        ->middleware('throttle:data-export');
     Route::post('account/delete', [ComplianceController::class, 'requestAccountDeletion']);
     Route::delete('account/delete', [ComplianceController::class, 'cancelAccountDeletion']);
     Route::get('audit-log', [ComplianceController::class, 'auditLog']);
