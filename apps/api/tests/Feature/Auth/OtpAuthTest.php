@@ -165,16 +165,14 @@ class OtpAuthTest extends TestCase
         $this->assertNotSame($tokens['access_token'], $refreshed['access_token']);
         $this->assertNotSame($tokens['refresh_token'], $refreshed['refresh_token']);
 
-        // Reusing the rotated-out token must fail.
+        // Reusing the rotated-out token must fail. (What happens to the rest
+        // of the chain after this is covered by
+        // test_reusing_an_already_rotated_token_revokes_the_rest_of_its_chain
+        // below — presenting a stale token isn't a no-op, it's treated as a
+        // theft signal and revokes the still-active descendant too.)
         $this->postJson('/api/v1/auth/refresh', [
             'refresh_token' => $tokens['refresh_token'],
         ])->assertStatus(401)->assertJsonPath('error.code', 'REFRESH_TOKEN_INVALID');
-
-        // The freshly issued one must still work — this reuse was of the
-        // token BEFORE it, so the chain starting from it is untouched.
-        $this->postJson('/api/v1/auth/refresh', [
-            'refresh_token' => $refreshed['refresh_token'],
-        ])->assertOk();
     }
 
     public function test_reusing_an_already_rotated_token_revokes_the_rest_of_its_chain(): void
