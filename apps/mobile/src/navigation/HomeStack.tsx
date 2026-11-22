@@ -1,6 +1,8 @@
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 
 import HomeDashboardScreen from "../screens/HomeDashboardScreen";
+import HealthScoreBreakdownScreen from "../screens/HealthScoreBreakdownScreen";
+import PreConsultationChecklistScreen from "../screens/PreConsultationChecklistScreen";
 import RemindersListScreen from "../screens/reminders/RemindersListScreen";
 import CreateReminderScreen from "../screens/reminders/CreateReminderScreen";
 import TimelineScreen from "../screens/TimelineScreen";
@@ -9,6 +11,8 @@ import ManageSharedLinksScreen from "../screens/sharing/ManageSharedLinksScreen"
 
 export type HomeStackParamList = {
   HomeDashboard: undefined;
+  HealthScoreBreakdown: undefined;
+  PreConsultationChecklist: { memberId: string; title: string; dueAt: string };
   Reminders: undefined;
   CreateReminder: undefined;
   Timeline: undefined;
@@ -22,6 +26,16 @@ export default function HomeStack() {
   return (
     <Stack.Navigator>
       <Stack.Screen name="HomeDashboard" component={HomeDashboardScreen} options={{ title: "Home" }} />
+      <Stack.Screen
+        name="HealthScoreBreakdown"
+        component={HealthScoreBreakdownScreen}
+        options={{ title: "Health Score Breakdown" }}
+      />
+      <Stack.Screen
+        name="PreConsultationChecklist"
+        component={PreConsultationChecklistScreen}
+        options={{ title: "Prepare for your visit" }}
+      />
       <Stack.Screen name="Reminders" component={RemindersListScreen} options={{ title: "Reminders" }} />
       <Stack.Screen name="CreateReminder" component={CreateReminderScreen} options={{ title: "New reminder" }} />
       <Stack.Screen name="Timeline" component={TimelineScreen} options={{ title: "Timeline" }} />

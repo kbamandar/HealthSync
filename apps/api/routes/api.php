@@ -82,6 +82,7 @@ Route::prefix('v1')->middleware('auth.jwt')->group(function () {
     // DASHBOARD
     Route::get('dashboard', [DashboardController::class, 'index']);
     Route::get('members/{id}/health-score', [DashboardController::class, 'healthScore']);
+    Route::get('members/{id}/health-insights', [DashboardController::class, 'healthInsights']);
 
     // DATA & COMPLIANCE
     Route::post('data-export', [ComplianceController::class, 'requestDataExport'])->middleware('throttle:data-export');

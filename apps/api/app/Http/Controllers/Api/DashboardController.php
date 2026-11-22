@@ -9,6 +9,8 @@ use App\Models\HealthRecord;
 use App\Models\Reminder;
 use App\Models\VitalReading;
 use App\Services\Family\FamilyGroupProvisioner;
+use App\Services\HealthInsights\HealthInsightsService;
+use App\Services\HealthScore\HealthScoreService;
 use App\Services\Vitals\VitalThresholdService;
 use Illuminate\Http\Request;
 
@@ -22,6 +24,8 @@ class DashboardController extends Controller
     public function __construct(
         private readonly FamilyGroupProvisioner $familyGroups,
         private readonly VitalThresholdService $thresholds,
+        private readonly HealthScoreService $healthScoreService,
+        private readonly HealthInsightsService $healthInsightsService,
     ) {}
 
     public function index(Request $request)
@@ -124,8 +128,36 @@ class DashboardController extends Controller
 
     public function healthScore(Request $request, string $memberId)
     {
-        // Health Score is a Sprint 9 feature (Health Score & Prescription
-        // Reader) — not yet implemented.
-        return ApiResponse::error('NOT_IMPLEMENTED', 'Health Score is not available yet.', status: 501);
+        $group = $this->familyGroups->ensureForUser($request->user());
+        $member = $this->resolveMember($group->id, $memberId);
+
+        if (! $member) {
+            return ApiResponse::error('NOT_FOUND', 'Family member not found.', status: 404);
+        }
+
+        return ApiResponse::success($this->healthScoreService->compute($member, $group->id));
+    }
+
+    public function healthInsights(Request $request, string $memberId)
+    {
+        $group = $this->familyGroups->ensureForUser($request->user());
+        $member = $this->resolveMember($group->id, $memberId);
+
+        if (! $member) {
+            return ApiResponse::error('NOT_FOUND', 'Family member not found.', status: 404);
+        }
+
+        return ApiResponse::success([
+            'insights' => $this->healthInsightsService->generateFor($member, $group->id),
+        ]);
+    }
+
+    private function resolveMember(string $groupId, string $memberId): ?FamilyMember
+    {
+        return FamilyMember::query()
+            ->where('id', $memberId)
+            ->where('family_group_id', $groupId)
+            ->active()
+            ->first();
     }
 }

@@ -189,7 +189,14 @@ export default function RecordDetailScreen({ route, navigation }: Props) {
       </View>
 
       {file?.ocr_extracted && (
-        <TouchableOpacity style={styles.ocrButton} onPress={() => navigation.navigate("OcrResults", { id: record.id })}>
+        <TouchableOpacity
+          style={styles.ocrButton}
+          onPress={() =>
+            record.category === "prescription"
+              ? navigation.navigate("PrescriptionReader", { id: record.id })
+              : navigation.navigate("OcrResults", { id: record.id })
+          }
+        >
           <Text style={styles.ocrButtonText}>View extracted data</Text>
         </TouchableOpacity>
       )}

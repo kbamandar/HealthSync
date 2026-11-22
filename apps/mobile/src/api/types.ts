@@ -81,13 +81,29 @@ export interface OcrTestValue {
   unit: string | null;
 }
 
+export interface OcrLabReportFields {
+  record_date: string | null;
+  lab_name: string | null;
+  test_values: OcrTestValue[];
+}
+
+export interface OcrMedicine {
+  name: string;
+  frequency: string;
+  duration_days: number | null;
+}
+
+export interface OcrPrescriptionFields {
+  doctor_name: string | null;
+  prescription_date: string | null;
+  medicines: OcrMedicine[];
+}
+
 export interface OcrData {
   raw_text: string | null;
-  fields: {
-    record_date: string | null;
-    lab_name: string | null;
-    test_values: OcrTestValue[];
-  };
+  // Shape depends on the record's category: lab-report-style fields for
+  // most categories, prescription fields when category is "prescription".
+  fields: OcrLabReportFields | OcrPrescriptionFields;
 }
 
 export interface RecordFile {
@@ -99,6 +115,12 @@ export interface RecordFile {
   ocr_extracted: boolean;
   ocr_data: OcrData | null;
   created_at: string | null;
+}
+
+export interface AppliedOcrReminder {
+  id: string;
+  title: string;
+  description: string | null;
 }
 
 export interface HealthRecord {
@@ -116,6 +138,9 @@ export interface HealthRecord {
   created_at: string;
   // Only present on GET /records/:id and PUT /records/:id, not on list/recycle-bin rows.
   files?: RecordFile[];
+  // Only present on the POST /records/:id/apply-ocr response — medication
+  // reminders auto-created from a parsed prescription, if any.
+  reminders_created?: AppliedOcrReminder[];
 }
 
 export interface RecordUploadUrl {
@@ -289,6 +314,45 @@ export interface AuditLogEntry {
 export interface AccountDeletionStatus {
   deletion_requested_at: string;
   purge_at: string;
+}
+
+export type HealthScoreStatus = "excellent" | "good" | "fair" | "needs_attention";
+
+export type HealthScoreFactorKey =
+  | "annual_checkup"
+  | "vitals_trend"
+  | "medication_adherence"
+  | "records_completeness";
+
+export interface HealthScoreFactor {
+  key: HealthScoreFactorKey;
+  label: string;
+  status: string;
+  detail: string;
+  weight: number;
+}
+
+export interface HealthScore {
+  score: number;
+  status: HealthScoreStatus;
+  summary: string;
+  factors: HealthScoreFactor[];
+  computed_at: string;
+}
+
+export type HealthInsightType = "vital_trend" | "medication_overdue" | "annual_checkup_overdue";
+export type HealthInsightSeverity = "info" | "warning";
+
+export interface HealthInsight {
+  id: string;
+  type: HealthInsightType;
+  severity: HealthInsightSeverity;
+  title: string;
+  message: string;
+}
+
+export interface HealthInsightsResponse {
+  insights: HealthInsight[];
 }
 
 export interface Doctor {

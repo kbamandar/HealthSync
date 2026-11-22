@@ -2,8 +2,7 @@
 
 namespace App\Services\Ocr;
 
-use Carbon\Carbon;
-use Exception;
+use App\Services\Ocr\Concerns\ParsesOcrDates;
 
 /**
  * Heuristic, regex-based structured-field extraction from raw OCR/PDF text.
@@ -13,11 +12,7 @@ use Exception;
  */
 class LabReportParser
 {
-    private const DATE_PATTERNS = [
-        '/\b(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})\b/',
-        '/\b(\d{1,2}\s+[A-Za-z]{3,9}\s+\d{2,4})\b/',
-        '/\b([A-Za-z]{3,9}\s+\d{1,2},?\s+\d{2,4})\b/',
-    ];
+    use ParsesOcrDates;
 
     private const VALUE_LINE_PATTERN = '/^([A-Za-z][A-Za-z0-9()\/\-\s]{1,40}?)\s+(\d+(?:\.\d+)?)\s*([A-Za-z%\/\x{00B5}]+)?\s*$/u';
 
@@ -28,44 +23,6 @@ class LabReportParser
             'lab_name' => $this->findLabName($rawText),
             'test_values' => $this->findTestValues($rawText),
         ];
-    }
-
-    private function findDate(string $text): ?string
-    {
-        // Numeric d/m/y is parsed explicitly as day-first (Indian convention
-        // — this is an Indian health app) rather than via Carbon::parse's
-        // ambiguous, locale-dependent m/d/y guess for slash dates.
-        if (preg_match(self::DATE_PATTERNS[0], $text, $match)) {
-            try {
-                $parsed = Carbon::createFromFormat('d/m/Y', sprintf('%02d/%02d/%04d',
-                    $match[1], $match[2], strlen($match[3]) === 2 ? 2000 + (int) $match[3] : (int) $match[3]));
-                if ($this->isPlausibleDate($parsed)) {
-                    return $parsed->toDateString();
-                }
-            } catch (Exception) {
-                // fall through to the other patterns
-            }
-        }
-
-        foreach ([self::DATE_PATTERNS[1], self::DATE_PATTERNS[2]] as $pattern) {
-            if (preg_match($pattern, $text, $match)) {
-                try {
-                    $parsed = Carbon::parse($match[0]);
-                    if ($this->isPlausibleDate($parsed)) {
-                        return $parsed->toDateString();
-                    }
-                } catch (Exception) {
-                    continue;
-                }
-            }
-        }
-
-        return null;
-    }
-
-    private function isPlausibleDate(Carbon $date): bool
-    {
-        return $date->year >= 2000 && $date->year <= (int) date('Y') + 1;
     }
 
     private function findLabName(string $text): ?string
@@ -86,17 +43,6 @@ class LabReportParser
         }
 
         return null;
-    }
-
-    private function looksLikeADateLine(string $line): bool
-    {
-        foreach (self::DATE_PATTERNS as $pattern) {
-            if (preg_match($pattern, $line) && mb_strlen(trim($line)) < 20) {
-                return true;
-            }
-        }
-
-        return false;
     }
 
     /** @return array<int, array{name: string, value: float, unit: string|null}> */

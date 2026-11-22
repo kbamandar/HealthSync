@@ -101,13 +101,180 @@ class DashboardTest extends TestCase
         $response->assertJsonCount(0, 'data.recent_records');
     }
 
-    public function test_health_score_endpoint_reports_not_implemented(): void
+    public function test_health_score_with_no_data_returns_a_neutral_baseline(): void
     {
         $user = User::factory()->create(['name' => 'Mandar Owner']);
         $memberId = $this->selfMemberId($user);
 
-        $this->getJson("/api/v1/members/{$memberId}/health-score", $this->authHeaders($user))
-            ->assertStatus(501);
+        $response = $this->getJson("/api/v1/members/{$memberId}/health-score", $this->authHeaders($user))
+            ->assertOk();
+
+        $response->assertJsonPath('data.factors.0.key', 'annual_checkup');
+        $response->assertJsonPath('data.factors.0.status', 'Not scheduled');
+        $response->assertJsonPath('data.factors.1.key', 'vitals_trend');
+        $response->assertJsonPath('data.factors.1.status', 'No recent readings');
+        $response->assertJsonPath('data.factors.2.key', 'medication_adherence');
+        $response->assertJsonPath('data.factors.2.status', 'No active medications');
+        $response->assertJsonPath('data.factors.3.key', 'records_completeness');
+        $this->assertIsInt($response->json('data.score'));
+        $this->assertNotEmpty($response->json('data.summary'));
+    }
+
+    public function test_health_score_rewards_a_well_maintained_member(): void
+    {
+        $user = User::factory()->create([
+            'name' => 'Mandar Owner',
+            'date_of_birth' => '1990-01-01',
+            'gender' => 'male',
+            'blood_group' => 'O+',
+        ]);
+        $memberId = $this->selfMemberId($user);
+
+        $this->postJson('/api/v1/records', [
+            'member_id' => $memberId,
+            'category' => 'lab_report',
+            'title' => 'CBC',
+        ], $this->authHeaders($user))->assertOk();
+
+        $this->postJson('/api/v1/vitals', [
+            'member_id' => $memberId,
+            'vital_type' => 'bp_systolic',
+            'value' => 115,
+        ], $this->authHeaders($user))->assertOk();
+
+        $this->postJson('/api/v1/reminders', [
+            'member_id' => $memberId,
+            'reminder_type' => 'annual_checkup',
+            'title' => 'Yearly physical',
+            'due_at' => now()->addMonths(6)->toIso8601String(),
+        ], $this->authHeaders($user))->assertOk();
+
+        $this->postJson('/api/v1/reminders', [
+            'member_id' => $memberId,
+            'reminder_type' => 'medication',
+            'title' => 'Metformin 500mg',
+            'due_at' => now()->addHours(6)->toIso8601String(),
+        ], $this->authHeaders($user))->assertOk();
+
+        $response = $this->getJson("/api/v1/members/{$memberId}/health-score", $this->authHeaders($user))
+            ->assertOk();
+
+        $response->assertJsonPath('data.factors.0.status', 'Good');
+        $response->assertJsonPath('data.factors.1.status', 'Good');
+        $response->assertJsonPath('data.factors.2.status', 'Good');
+        $response->assertJsonPath('data.factors.3.status', 'Good');
+        $this->assertGreaterThanOrEqual(90, $response->json('data.score'));
+        $this->assertSame('excellent', $response->json('data.status'));
+    }
+
+    public function test_health_score_flags_overdue_reminders(): void
+    {
+        $user = User::factory()->create(['name' => 'Mandar Owner']);
+        $memberId = $this->selfMemberId($user);
+
+        $this->postJson('/api/v1/reminders', [
+            'member_id' => $memberId,
+            'reminder_type' => 'annual_checkup',
+            'title' => 'Overdue physical',
+            'due_at' => now()->subDays(40)->toIso8601String(),
+        ], $this->authHeaders($user))->assertOk();
+
+        $this->postJson('/api/v1/reminders', [
+            'member_id' => $memberId,
+            'reminder_type' => 'medication',
+            'title' => 'Missed dose',
+            'due_at' => now()->subHours(2)->toIso8601String(),
+        ], $this->authHeaders($user))->assertOk();
+
+        $response = $this->getJson("/api/v1/members/{$memberId}/health-score", $this->authHeaders($user))
+            ->assertOk();
+
+        $response->assertJsonPath('data.factors.0.status', 'Overdue');
+        $response->assertJsonPath('data.factors.2.status', 'Behind');
+    }
+
+    public function test_health_score_rejects_a_member_outside_the_callers_family_group(): void
+    {
+        $owner = User::factory()->create(['name' => 'Mandar Owner']);
+        $stranger = User::factory()->create(['name' => 'Someone Else']);
+        $strangerMemberId = $this->selfMemberId($stranger);
+
+        $this->getJson("/api/v1/members/{$strangerMemberId}/health-score", $this->authHeaders($owner))
+            ->assertStatus(404);
+    }
+
+    public function test_health_insights_with_no_data_returns_an_empty_list(): void
+    {
+        $user = User::factory()->create(['name' => 'Mandar Owner']);
+        $memberId = $this->selfMemberId($user);
+
+        $response = $this->getJson("/api/v1/members/{$memberId}/health-insights", $this->authHeaders($user))
+            ->assertOk();
+
+        $response->assertJsonCount(0, 'data.insights');
+    }
+
+    public function test_health_insights_flags_a_worsening_vital_trend(): void
+    {
+        $user = User::factory()->create(['name' => 'Mandar Owner']);
+        $memberId = $this->selfMemberId($user);
+
+        foreach ([
+            ['value' => 130, 'daysAgo' => 3],
+            ['value' => 145, 'daysAgo' => 2],
+            ['value' => 150, 'daysAgo' => 1],
+        ] as $reading) {
+            $this->postJson('/api/v1/vitals', [
+                'member_id' => $memberId,
+                'vital_type' => 'bp_systolic',
+                'value' => $reading['value'],
+                'recorded_at' => now()->subDays($reading['daysAgo'])->toIso8601String(),
+            ], $this->authHeaders($user))->assertOk();
+        }
+
+        $response = $this->getJson("/api/v1/members/{$memberId}/health-insights", $this->authHeaders($user))
+            ->assertOk();
+
+        $response->assertJsonCount(1, 'data.insights');
+        $response->assertJsonPath('data.insights.0.id', 'vital_trend:bp_systolic');
+        $response->assertJsonPath('data.insights.0.severity', 'warning');
+    }
+
+    public function test_health_insights_flags_overdue_medication_and_checkup_reminders(): void
+    {
+        $user = User::factory()->create(['name' => 'Mandar Owner']);
+        $memberId = $this->selfMemberId($user);
+
+        $this->postJson('/api/v1/reminders', [
+            'member_id' => $memberId,
+            'reminder_type' => 'medication',
+            'title' => 'Missed dose',
+            'due_at' => now()->subHours(2)->toIso8601String(),
+        ], $this->authHeaders($user))->assertOk();
+
+        $this->postJson('/api/v1/reminders', [
+            'member_id' => $memberId,
+            'reminder_type' => 'annual_checkup',
+            'title' => 'Overdue physical',
+            'due_at' => now()->subDays(10)->toIso8601String(),
+        ], $this->authHeaders($user))->assertOk();
+
+        $response = $this->getJson("/api/v1/members/{$memberId}/health-insights", $this->authHeaders($user))
+            ->assertOk();
+
+        $ids = collect($response->json('data.insights'))->pluck('id');
+        $this->assertTrue($ids->contains('medication_overdue'));
+        $this->assertTrue($ids->contains('annual_checkup_overdue'));
+    }
+
+    public function test_health_insights_rejects_a_member_outside_the_callers_family_group(): void
+    {
+        $owner = User::factory()->create(['name' => 'Mandar Owner']);
+        $stranger = User::factory()->create(['name' => 'Someone Else']);
+        $strangerMemberId = $this->selfMemberId($stranger);
+
+        $this->getJson("/api/v1/members/{$strangerMemberId}/health-insights", $this->authHeaders($owner))
+            ->assertStatus(404);
     }
 
     public function test_unauthenticated_requests_are_rejected(): void

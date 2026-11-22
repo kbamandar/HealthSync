@@ -8,3 +8,4 @@ export * from "./sharing";
 export * from "./audit";
 export * from "./session";
 export * from "./api";
+export * from "./health";
