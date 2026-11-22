@@ -47,7 +47,7 @@ Route::prefix('v1')->middleware('auth.jwt')->group(function () {
     Route::put('records/{id}', [HealthRecordController::class, 'update']);
     Route::delete('records/{id}', [HealthRecordController::class, 'destroy']);
     Route::post('records/{id}/upload-url', [HealthRecordController::class, 'uploadUrl']);
-    Route::post('records/{id}/files', [HealthRecordController::class, 'registerFile']);
+    Route::post('records/{id}/files', [HealthRecordController::class, 'registerFile'])->middleware('throttle:ocr');
     Route::post('records/{id}/restore', [HealthRecordController::class, 'restore']);
     Route::post('records/{id}/apply-ocr', [HealthRecordController::class, 'applyOcrData']);
 
@@ -84,7 +84,7 @@ Route::prefix('v1')->middleware('auth.jwt')->group(function () {
     Route::get('members/{id}/health-score', [DashboardController::class, 'healthScore']);
 
     // DATA & COMPLIANCE
-    Route::post('data-export', [ComplianceController::class, 'requestDataExport']);
+    Route::post('data-export', [ComplianceController::class, 'requestDataExport'])->middleware('throttle:data-export');
     Route::post('account/delete', [ComplianceController::class, 'requestAccountDeletion']);
     Route::delete('account/delete', [ComplianceController::class, 'cancelAccountDeletion']);
     Route::get('audit-log', [ComplianceController::class, 'auditLog']);
@@ -95,7 +95,7 @@ Route::prefix('v1')->middleware('auth.jwt')->group(function () {
 });
 
 // Public: no auth required
-Route::get('public/share/{token}', [SharedLinkController::class, 'publicAccess'])->name('public.share');
+Route::get('public/share/{token}', [SharedLinkController::class, 'publicAccess'])->middleware('throttle:public-share')->name('public.share');
 
 // Stand-ins for S3 presigned URLs (see RecordStorageService) — gated by the
 // `signed` middleware alone, exactly as a presigned S3 URL is gated by its

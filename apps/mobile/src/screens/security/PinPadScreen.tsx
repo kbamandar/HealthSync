@@ -59,6 +59,9 @@ export default function PinPadScreen({ title, subtitle, error, onComplete }: Pin
                 style={styles.key}
                 disabled={key === null}
                 onPress={() => handleKeyPress(key)}
+                {...(key === "⌫"
+                  ? { accessibilityRole: "button" as const, accessibilityLabel: "Delete last digit" }
+                  : null)}
               >
                 {key && <Text style={styles.keyText}>{key}</Text>}
               </TouchableOpacity>

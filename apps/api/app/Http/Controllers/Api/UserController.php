@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Responses\ApiResponse;
+use App\Models\AuditEvent;
 use App\Models\Device;
 use App\Services\Family\FamilyGroupProvisioner;
 use Illuminate\Http\Request;
@@ -67,6 +68,20 @@ class UserController extends Controller
             'push_token' => ['required', 'string', 'max:4096'],
             'platform' => ['required', 'string', 'in:ios,android'],
         ]);
+
+        // A push token can legitimately end up owned by a different user
+        // (device factory-reset, token reused by the OS, app reinstalled
+        // under another account) — reassigning it silently would let the
+        // previous owner's old session keep receiving no pushes with no
+        // record of why; log it instead of just overwriting.
+        $existing = Device::where('push_token', $data['push_token'])->first();
+        if ($existing && $existing->user_id !== $request->user()->id) {
+            AuditEvent::record('device.reassigned', $request->user()->id, $request, [
+                'push_token_prefix' => substr($data['push_token'], 0, 12),
+                'previous_user_id' => $existing->user_id,
+            ]);
+            $existing->delete();
+        }
 
         // Storage only — this sandbox has no Firebase project, so there is
         // no FCM sender wired up to actually deliver pushes to these tokens.

@@ -165,15 +165,47 @@ class OtpAuthTest extends TestCase
         $this->assertNotSame($tokens['access_token'], $refreshed['access_token']);
         $this->assertNotSame($tokens['refresh_token'], $refreshed['refresh_token']);
 
-        // Reusing the rotated-out token must fail.
+        // Reusing the rotated-out token must fail. (What happens to the rest
+        // of the chain after this is covered by
+        // test_reusing_an_already_rotated_token_revokes_the_rest_of_its_chain
+        // below — presenting a stale token isn't a no-op, it's treated as a
+        // theft signal and revokes the still-active descendant too.)
         $this->postJson('/api/v1/auth/refresh', [
             'refresh_token' => $tokens['refresh_token'],
         ])->assertStatus(401)->assertJsonPath('error.code', 'REFRESH_TOKEN_INVALID');
+    }
 
-        // The freshly issued one must still work.
+    public function test_reusing_an_already_rotated_token_revokes_the_rest_of_its_chain(): void
+    {
+        $code = $this->sendOtpAndCaptureCode();
+
+        $tokens = $this->postJson('/api/v1/auth/otp/verify', [
+            'email' => self::EMAIL,
+            'mobile' => self::MOBILE,
+            'otp' => $code,
+            'consent' => ['privacy_policy_version' => '1.0', 'terms_of_service_version' => '1.0'],
+        ])->json('data');
+
+        $refreshed = $this->postJson('/api/v1/auth/refresh', [
+            'refresh_token' => $tokens['refresh_token'],
+        ])->assertOk()->json('data');
+
+        // Someone presents the stale (already-rotated) token again — the
+        // classic signal of token theft. This should kill the rest of the
+        // chain, not just reject this one request.
+        $this->postJson('/api/v1/auth/refresh', [
+            'refresh_token' => $tokens['refresh_token'],
+        ])->assertStatus(401);
+
+        // The legitimately-rotated descendant token must now also be dead,
+        // even though nothing is wrong with it on its own.
         $this->postJson('/api/v1/auth/refresh', [
             'refresh_token' => $refreshed['refresh_token'],
-        ])->assertOk();
+        ])->assertStatus(401)->assertJsonPath('error.code', 'REFRESH_TOKEN_INVALID');
+
+        $this->assertDatabaseHas('audit_events', [
+            'event_type' => 'refresh_token.reuse_detected',
+        ]);
     }
 
     public function test_logout_revokes_the_refresh_token(): void

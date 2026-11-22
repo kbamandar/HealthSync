@@ -85,6 +85,36 @@ class TokenService
     }
 
     /**
+     * Unlike findActiveRefreshToken, returns the row regardless of whether
+     * it's still active — used to detect reuse of an already-rotated token.
+     */
+    public function findRefreshTokenByPlaintext(string $plaintext): ?RefreshToken
+    {
+        return RefreshToken::query()
+            ->where('token_hash', hash('sha256', $plaintext))
+            ->first();
+    }
+
+    /**
+     * A revoked token with a replaced_by_id was rotated away, not merely
+     * logged out — presenting it again means either the legitimate device
+     * re-sent a stale token, or someone stole it mid-chain. Treat it as
+     * theft: revoke every still-active descendant in the lineage so neither
+     * party keeps a working session.
+     */
+    public function revokeDescendantChain(RefreshToken $token): void
+    {
+        $current = $token->replaced_by_id ? RefreshToken::find($token->replaced_by_id) : null;
+
+        while ($current) {
+            if ($current->isActive()) {
+                $current->update(['revoked_at' => now()]);
+            }
+            $current = $current->replaced_by_id ? RefreshToken::find($current->replaced_by_id) : null;
+        }
+    }
+
+    /**
      * Rotation: revoke the presented token and issue a fresh pair.
      *
      * @return array{access_token: string, refresh_token: string, expires_in: int}

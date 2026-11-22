@@ -94,6 +94,28 @@ class SessionManagementTest extends TestCase
             ->assertStatus(401);
     }
 
+    public function test_revoking_a_session_immediately_invalidates_its_still_unexpired_access_token(): void
+    {
+        $firstLogin = $this->loginWithDevice('iPhone 15 Pro', 'ios');
+        $secondLogin = $this->loginWithDevice('Pixel 8', 'android');
+
+        $firstHeaders = ['Authorization' => 'Bearer '.$firstLogin['access_token']];
+        $secondHeaders = ['Authorization' => 'Bearer '.$secondLogin['access_token']];
+
+        // The iPhone's access token works right now.
+        $this->getJson('/api/v1/users/me', $firstHeaders)->assertOk();
+
+        $sessions = $this->getJson('/api/v1/sessions', $secondHeaders)->json('data');
+        $iphoneSessionId = collect($sessions)->firstWhere('device_name', 'iPhone 15 Pro')['id'];
+        $this->deleteJson("/api/v1/sessions/{$iphoneSessionId}", [], $secondHeaders)->assertOk();
+
+        // The access token is still within its 15-minute TTL, but the
+        // session backing it was just revoked from another device —
+        // "sign out this device" must take effect immediately, not after
+        // the access token happens to expire on its own.
+        $this->getJson('/api/v1/users/me', $firstHeaders)->assertStatus(401);
+    }
+
     public function test_cannot_revoke_a_session_belonging_to_another_user(): void
     {
         $victim = $this->loginWithDevice('Victim Phone', 'ios');
