@@ -57,6 +57,14 @@ class SharedLink extends Model
             return false;
         }
 
+        if ($this->link_type === 'record' && $this->record?->is_deleted !== false) {
+            return false;
+        }
+
+        if ($this->link_type === 'health_summary' && $this->member?->removed_at !== null) {
+            return false;
+        }
+
         return $this->max_access === null || $this->access_count < $this->max_access;
     }
 }

@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Http\Responses\ApiResponse;
+use App\Models\RefreshToken;
 use App\Models\User;
 use App\Services\Auth\TokenService;
 use Closure;
@@ -33,6 +34,13 @@ class AuthenticateWithJwt
 
         if (! $user || ! $user->is_active) {
             return ApiResponse::error('UNAUTHENTICATED', 'Invalid or expired access token.', status: 401);
+        }
+
+        if (isset($payload->sid)) {
+            $session = RefreshToken::find($payload->sid);
+            if (! $session || ! $session->isActive()) {
+                return ApiResponse::error('UNAUTHENTICATED', 'This session has been signed out.', status: 401);
+            }
         }
 
         Auth::setUser($user);
