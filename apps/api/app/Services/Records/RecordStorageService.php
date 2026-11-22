@@ -98,4 +98,9 @@ class RecordStorageService
     {
         return Storage::disk(self::DISK)->mimeType($key) ?: null;
     }
+
+    public function delete(string $key): void
+    {
+        Storage::disk(self::DISK)->delete($key);
+    }
 }

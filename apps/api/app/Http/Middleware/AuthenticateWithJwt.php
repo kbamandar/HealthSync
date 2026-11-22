@@ -36,6 +36,7 @@ class AuthenticateWithJwt
         }
 
         Auth::setUser($user);
+        $request->attributes->set('session_id', $payload->sid ?? null);
 
         return $next($request);
     }
