@@ -9,7 +9,9 @@ export type AuditEventType =
   | "session.revoke"
   | "data_export.requested"
   | "account_deletion.requested"
-  | "account_deletion.cancelled";
+  | "account_deletion.cancelled"
+  | "refresh_token.reuse_detected"
+  | "device.reassigned";
 
 export interface AuditEvent {
   id: number;

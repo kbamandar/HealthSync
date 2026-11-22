@@ -170,10 +170,44 @@ class OtpAuthTest extends TestCase
             'refresh_token' => $tokens['refresh_token'],
         ])->assertStatus(401)->assertJsonPath('error.code', 'REFRESH_TOKEN_INVALID');
 
-        // The freshly issued one must still work.
+        // The freshly issued one must still work — this reuse was of the
+        // token BEFORE it, so the chain starting from it is untouched.
         $this->postJson('/api/v1/auth/refresh', [
             'refresh_token' => $refreshed['refresh_token'],
         ])->assertOk();
+    }
+
+    public function test_reusing_an_already_rotated_token_revokes_the_rest_of_its_chain(): void
+    {
+        $code = $this->sendOtpAndCaptureCode();
+
+        $tokens = $this->postJson('/api/v1/auth/otp/verify', [
+            'email' => self::EMAIL,
+            'mobile' => self::MOBILE,
+            'otp' => $code,
+            'consent' => ['privacy_policy_version' => '1.0', 'terms_of_service_version' => '1.0'],
+        ])->json('data');
+
+        $refreshed = $this->postJson('/api/v1/auth/refresh', [
+            'refresh_token' => $tokens['refresh_token'],
+        ])->assertOk()->json('data');
+
+        // Someone presents the stale (already-rotated) token again — the
+        // classic signal of token theft. This should kill the rest of the
+        // chain, not just reject this one request.
+        $this->postJson('/api/v1/auth/refresh', [
+            'refresh_token' => $tokens['refresh_token'],
+        ])->assertStatus(401);
+
+        // The legitimately-rotated descendant token must now also be dead,
+        // even though nothing is wrong with it on its own.
+        $this->postJson('/api/v1/auth/refresh', [
+            'refresh_token' => $refreshed['refresh_token'],
+        ])->assertStatus(401)->assertJsonPath('error.code', 'REFRESH_TOKEN_INVALID');
+
+        $this->assertDatabaseHas('audit_events', [
+            'event_type' => 'refresh_token.reuse_detected',
+        ]);
     }
 
     public function test_logout_revokes_the_refresh_token(): void

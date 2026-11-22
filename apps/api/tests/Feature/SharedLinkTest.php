@@ -208,6 +208,51 @@ class SharedLinkTest extends TestCase
         $this->assertFalse(SharedLink::findOrFail($linkId)->is_revoked);
     }
 
+    public function test_public_access_rejects_a_link_whose_record_was_since_deleted(): void
+    {
+        $user = User::factory()->create(['name' => 'Mandar Owner']);
+        $memberId = $this->selfMemberId($user);
+
+        $recordId = $this->postJson('/api/v1/records', [
+            'member_id' => $memberId,
+            'category' => 'lab_report',
+        ], $this->authHeaders($user))->json('data.id');
+
+        $linkId = $this->postJson('/api/v1/share/record', ['record_id' => $recordId], $this->authHeaders($user))
+            ->json('data.id');
+        $link = SharedLink::findOrFail($linkId);
+
+        $this->getJson("/api/public/share/{$link->token}")->assertOk();
+
+        $this->deleteJson("/api/v1/records/{$recordId}", [], $this->authHeaders($user))->assertOk();
+
+        $this->getJson("/api/public/share/{$link->token}")
+            ->assertStatus(404)
+            ->assertJsonPath('error.code', 'LINK_INVALID');
+    }
+
+    public function test_public_access_rejects_a_health_summary_link_whose_member_was_since_removed(): void
+    {
+        $user = User::factory()->create(['name' => 'Mandar Owner']);
+        $invitedMemberId = $this->postJson('/api/v1/family/members', [
+            'display_name' => 'Asha',
+            'relationship' => 'child',
+            'is_guardian_managed' => true,
+        ], $this->authHeaders($user))->json('data.id');
+
+        $linkId = $this->postJson('/api/v1/share/summary', ['member_id' => $invitedMemberId], $this->authHeaders($user))
+            ->json('data.id');
+        $link = SharedLink::findOrFail($linkId);
+
+        $this->getJson("/api/public/share/{$link->token}")->assertOk();
+
+        $this->deleteJson("/api/v1/family/members/{$invitedMemberId}", [], $this->authHeaders($user))->assertOk();
+
+        $this->getJson("/api/public/share/{$link->token}")
+            ->assertStatus(404)
+            ->assertJsonPath('error.code', 'LINK_INVALID');
+    }
+
     public function test_unauthenticated_requests_are_rejected(): void
     {
         $this->getJson('/api/v1/share')->assertStatus(401);

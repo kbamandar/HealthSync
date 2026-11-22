@@ -126,6 +126,15 @@ class AuthController extends Controller
         $refreshToken = $this->tokens->findActiveRefreshToken($data['refresh_token']);
 
         if (! $refreshToken) {
+            $presented = $this->tokens->findRefreshTokenByPlaintext($data['refresh_token']);
+
+            if ($presented && $presented->revoked_at !== null && $presented->replaced_by_id !== null) {
+                $this->tokens->revokeDescendantChain($presented);
+                AuditEvent::record('refresh_token.reuse_detected', $presented->user_id, $request, [
+                    'refresh_token_id' => $presented->id,
+                ]);
+            }
+
             return ApiResponse::error('REFRESH_TOKEN_INVALID', 'This refresh token is invalid, expired, or already used.', status: 401);
         }
 

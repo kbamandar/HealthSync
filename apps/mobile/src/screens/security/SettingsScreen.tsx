@@ -7,6 +7,7 @@ import * as LocalAuthentication from "expo-local-authentication";
 import { complianceApi } from "../../api/complianceApi";
 import { useAuth } from "../../auth/AuthContext";
 import type { ProfileStackParamList } from "../../navigation/ProfileStack";
+import { getPushPermissionStatus, requestPushPermissionAndRegister } from "../../notifications/pushNotifications";
 import { AUTO_LOCK_TIMEOUT_OPTIONS, appLockStorage } from "../../security/appLockStorage";
 import { useAppLock } from "../../security/AppLockContext";
 
@@ -19,14 +20,18 @@ export default function SettingsScreen() {
   const [autoLockSeconds, setAutoLockSeconds] = useState(0);
   const [isExporting, setIsExporting] = useState(false);
   const [isUpdatingDeletion, setIsUpdatingDeletion] = useState(false);
+  const [pushEnabled, setPushEnabled] = useState(false);
+  const [isRequestingPush, setIsRequestingPush] = useState(false);
 
   const load = useCallback(async () => {
-    const [biometric, timeout] = await Promise.all([
+    const [biometric, timeout, pushStatus] = await Promise.all([
       appLockStorage.isBiometricEnabled(),
       appLockStorage.getAutoLockTimeoutSeconds(),
+      getPushPermissionStatus(),
     ]);
     setBiometricEnabled(biometric);
     setAutoLockSeconds(timeout);
+    setPushEnabled(pushStatus === "granted");
   }, []);
 
   useFocusEffect(
@@ -68,6 +73,30 @@ export default function SettingsScreen() {
         },
       })),
     );
+  }
+
+  async function handleTogglePush(value: boolean) {
+    if (!value) {
+      Alert.alert(
+        "Turn off push notifications",
+        "Push notifications can only be disabled from your device's system settings.",
+      );
+      return;
+    }
+
+    setIsRequestingPush(true);
+    try {
+      const status = await requestPushPermissionAndRegister();
+      setPushEnabled(status === "granted");
+      if (status === "denied") {
+        Alert.alert(
+          "Permission denied",
+          "Enable notifications for HealthSync in your device's system settings to turn this on.",
+        );
+      }
+    } finally {
+      setIsRequestingPush(false);
+    }
   }
 
   async function handleExportData() {
@@ -158,6 +187,18 @@ export default function SettingsScreen() {
       <View style={styles.section}>
         <Text style={styles.sectionLabel}>NOTIFICATIONS</Text>
         <View style={styles.rows}>
+          <View style={styles.row}>
+            <View style={styles.textCol}>
+              <Text style={styles.rowTitle}>Push notifications</Text>
+              <Text style={styles.rowSubtitle}>Reminders and alerts on this device</Text>
+            </View>
+            {isRequestingPush ? (
+              <ActivityIndicator size="small" />
+            ) : (
+              <Switch value={pushEnabled} onValueChange={handleTogglePush} />
+            )}
+          </View>
+
           <View style={styles.row}>
             <View style={styles.textCol}>
               <Text style={styles.rowTitle}>Reminder notifications</Text>
