@@ -67,25 +67,44 @@ export default function RemindersListScreen({ navigation }: Props) {
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.list}
         renderSectionHeader={({ section }) => <Text style={styles.sectionLabel}>{section.title}</Text>}
-        renderItem={({ item }) => (
-          <View style={styles.row}>
-            <View style={styles.dot} />
-            <View style={styles.textCol}>
-              <View style={styles.typePill}>
-                <Text style={styles.typePillText}>{REMINDER_TYPE_LABELS[item.reminder_type]}</Text>
+        renderItem={({ item }) => {
+          const canPrepare = item.reminder_type === "appointment" || item.reminder_type === "annual_checkup";
+          const row = (
+            <View style={styles.row}>
+              <View style={styles.dot} />
+              <View style={styles.textCol}>
+                <View style={styles.typePill}>
+                  <Text style={styles.typePillText}>{REMINDER_TYPE_LABELS[item.reminder_type]}</Text>
+                </View>
+                <Text style={styles.title}>{item.title}</Text>
+                <Text style={styles.member}>{memberName(item.member_id)}</Text>
               </View>
-              <Text style={styles.title}>{item.title}</Text>
-              <Text style={styles.member}>{memberName(item.member_id)}</Text>
+              <Text style={styles.when}>
+                {new Date(item.due_at).toLocaleString(undefined, {
+                  weekday: "short",
+                  hour: "numeric",
+                  minute: "2-digit",
+                })}
+              </Text>
             </View>
-            <Text style={styles.when}>
-              {new Date(item.due_at).toLocaleString(undefined, {
-                weekday: "short",
-                hour: "numeric",
-                minute: "2-digit",
-              })}
-            </Text>
-          </View>
-        )}
+          );
+
+          if (!canPrepare) return row;
+
+          return (
+            <TouchableOpacity
+              onPress={() =>
+                navigation.navigate("PreConsultationChecklist", {
+                  memberId: item.member_id,
+                  title: item.title,
+                  dueAt: item.due_at,
+                })
+              }
+            >
+              {row}
+            </TouchableOpacity>
+          );
+        }}
         ListEmptyComponent={
           <View style={styles.centered}>
             <Text style={styles.emptyText}>No reminders yet.</Text>

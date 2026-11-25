@@ -17,10 +17,13 @@ use Symfony\Component\Process\Process;
  */
 class OcrExtractor
 {
-    public function __construct(private readonly LabReportParser $parser) {}
+    public function __construct(
+        private readonly LabReportParser $labReportParser,
+        private readonly PrescriptionParser $prescriptionParser,
+    ) {}
 
     /** @return array{raw_text: string|null, fields: array} */
-    public function extract(string $absolutePath, string $mimeType): array
+    public function extract(string $absolutePath, string $mimeType, string $category = 'lab_report'): array
     {
         $rawText = match ($mimeType) {
             'application/pdf' => $this->runProcess(['pdftotext', '-layout', $absolutePath, '-']),
@@ -28,11 +31,19 @@ class OcrExtractor
             default => null,
         };
 
+        $isPrescription = $category === 'prescription';
+
         if ($rawText === null || trim($rawText) === '') {
-            return ['raw_text' => null, 'fields' => ['record_date' => null, 'lab_name' => null, 'test_values' => []]];
+            $emptyFields = $isPrescription
+                ? ['doctor_name' => null, 'prescription_date' => null, 'medicines' => []]
+                : ['record_date' => null, 'lab_name' => null, 'test_values' => []];
+
+            return ['raw_text' => null, 'fields' => $emptyFields];
         }
 
-        return ['raw_text' => $rawText, 'fields' => $this->parser->parse($rawText)];
+        $parser = $isPrescription ? $this->prescriptionParser : $this->labReportParser;
+
+        return ['raw_text' => $rawText, 'fields' => $parser->parse($rawText)];
     }
 
     private function runProcess(array $command): ?string

@@ -52,7 +52,8 @@ export default function OcrResultsScreen({ route, navigation }: Props) {
   }
 
   const file = record.files?.find((f) => f.ocr_extracted);
-  const fields = file?.ocr_data?.fields;
+  const rawFields = file?.ocr_data?.fields;
+  const fields = rawFields && "lab_name" in rawFields ? rawFields : null;
 
   if (!file || !fields || (!fields.record_date && !fields.lab_name && fields.test_values.length === 0)) {
     return (

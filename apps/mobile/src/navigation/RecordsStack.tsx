@@ -10,6 +10,7 @@ import RecordDetailScreen from "../screens/records/RecordDetailScreen";
 import EditRecordScreen from "../screens/records/EditRecordScreen";
 import RecycleBinScreen from "../screens/records/RecycleBinScreen";
 import OcrResultsScreen from "../screens/records/OcrResultsScreen";
+import PrescriptionReaderScreen from "../screens/records/PrescriptionReaderScreen";
 
 export type RecordsStackParamList = {
   RecordsList: undefined;
@@ -18,6 +19,7 @@ export type RecordsStackParamList = {
   EditRecord: { id: string };
   RecycleBin: undefined;
   OcrResults: { id: string };
+  PrescriptionReader: { id: string };
 };
 
 const Stack = createNativeStackNavigator<RecordsStackParamList>();
@@ -48,6 +50,11 @@ export default function RecordsStack() {
       <Stack.Screen name="EditRecord" component={EditRecordScreen} options={{ title: "Edit record" }} />
       <Stack.Screen name="RecycleBin" component={RecycleBinScreen} options={{ title: "Recycle bin" }} />
       <Stack.Screen name="OcrResults" component={OcrResultsScreen} options={{ title: "Extracted data" }} />
+      <Stack.Screen
+        name="PrescriptionReader"
+        component={PrescriptionReaderScreen}
+        options={{ title: "Prescription scanned" }}
+      />
     </Stack.Navigator>
   );
 }

@@ -4,10 +4,12 @@ import { useFocusEffect } from "@react-navigation/native";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 
 import { dashboardApi } from "../api/dashboardApi";
-import type { Dashboard } from "../api/types";
+import type { Dashboard, HealthInsight, HealthScore } from "../api/types";
 import { useAuth } from "../auth/AuthContext";
 import Avatar from "../components/Avatar";
 import Badge from "../components/Badge";
+import HealthScoreGauge from "../components/HealthScoreGauge";
+import { useFamily } from "../family/FamilyContext";
 import { CATEGORY_LABELS } from "../records/categories";
 import { REMINDER_TYPE_LABELS } from "../reminders/reminderTypes";
 import type { HomeStackParamList } from "../navigation/HomeStack";
@@ -23,17 +25,29 @@ type Props = NativeStackScreenProps<HomeStackParamList, "HomeDashboard">;
 
 export default function HomeDashboardScreen({ navigation }: Props) {
   const { user } = useAuth();
+  const { selectedMemberId } = useFamily();
   const [dashboard, setDashboard] = useState<Dashboard | null>(null);
+  const [healthScore, setHealthScore] = useState<HealthScore | null>(null);
+  const [insights, setInsights] = useState<HealthInsight[]>([]);
+  const [dismissedInsightIds, setDismissedInsightIds] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   const load = useCallback(async () => {
     setIsLoading(true);
     try {
-      setDashboard(await dashboardApi.get());
+      const [dashboardResult, healthScoreResult, insightsResult] = await Promise.all([
+        dashboardApi.get(),
+        selectedMemberId ? dashboardApi.getHealthScore(selectedMemberId) : Promise.resolve(null),
+        selectedMemberId ? dashboardApi.getHealthInsights(selectedMemberId) : Promise.resolve(null),
+      ]);
+      setDashboard(dashboardResult);
+      setHealthScore(healthScoreResult);
+      setInsights(insightsResult?.insights ?? []);
+      setDismissedInsightIds([]);
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [selectedMemberId]);
 
   useFocusEffect(
     useCallback(() => {
@@ -48,6 +62,8 @@ export default function HomeDashboardScreen({ navigation }: Props) {
       </View>
     );
   }
+
+  const topInsight = insights.find((insight) => !dismissedInsightIds.includes(insight.id)) ?? null;
 
   return (
     <FlatList
@@ -72,6 +88,33 @@ export default function HomeDashboardScreen({ navigation }: Props) {
               <Text style={styles.quickAccessText}>Shared links</Text>
             </TouchableOpacity>
           </View>
+
+          {healthScore && (
+            <View style={styles.scoreWidget}>
+              <Text style={styles.scoreTitle}>Your Health Score</Text>
+              <View style={styles.scoreRow}>
+                <HealthScoreGauge score={healthScore.score} status={healthScore.status} />
+                <View style={styles.scoreTextCol}>
+                  <Text style={styles.scoreSummary}>{healthScore.summary}</Text>
+                  <TouchableOpacity onPress={() => navigation.navigate("HealthScoreBreakdown")}>
+                    <Text style={styles.scoreLink}>View breakdown ›</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </View>
+          )}
+
+          {topInsight && (
+            <View style={styles.insightsCard}>
+              <View style={styles.insightsTopLine}>
+                <Text style={styles.insightsIcon}>!</Text>
+                <Text style={styles.insightsText}>{topInsight.message}</Text>
+              </View>
+              <TouchableOpacity onPress={() => setDismissedInsightIds((ids) => [...ids, topInsight.id])}>
+                <Text style={styles.insightsDismiss}>I understand</Text>
+              </TouchableOpacity>
+            </View>
+          )}
 
           <View style={styles.glanceCard}>
             <Text style={styles.glanceTitle}>Health at a glance</Text>
@@ -176,6 +219,17 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   quickAccessText: { fontSize: 13, fontWeight: "600", color: "#0f766e" },
+  scoreWidget: { backgroundColor: "#fff", borderRadius: 12, padding: 14, gap: 12 },
+  scoreTitle: { fontSize: 13, fontWeight: "600", color: "#666" },
+  scoreRow: { flexDirection: "row", alignItems: "center", gap: 16 },
+  scoreTextCol: { flex: 1, gap: 8 },
+  scoreSummary: { fontSize: 13, color: "#666" },
+  scoreLink: { fontSize: 13, fontWeight: "600", color: "#0f766e" },
+  insightsCard: { backgroundColor: "#fef3c7", borderRadius: 12, padding: 14, gap: 10 },
+  insightsTopLine: { flexDirection: "row", gap: 10 },
+  insightsIcon: { fontSize: 15, fontWeight: "700", color: "#92400e" },
+  insightsText: { flex: 1, fontSize: 13, color: "#0f172a", lineHeight: 18 },
+  insightsDismiss: { fontSize: 13, fontWeight: "600", color: "#92400e" },
   glanceCard: { backgroundColor: "#fff", borderRadius: 12, padding: 14, gap: 10 },
   glanceTitle: { fontSize: 15, fontWeight: "700" },
   statRow: { flexDirection: "row", gap: 10 },

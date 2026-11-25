@@ -19,7 +19,7 @@ class ExtractRecordFileOcr implements ShouldQueue
 
     public function handle(OcrExtractor $extractor, RecordStorageService $storage): void
     {
-        $file = RecordFile::find($this->recordFileId);
+        $file = RecordFile::with('record')->find($this->recordFileId);
 
         if (! $file || ! in_array($file->mime_type, ['application/pdf', 'image/jpeg', 'image/png'], true)) {
             return;
@@ -29,7 +29,7 @@ class ExtractRecordFileOcr implements ShouldQueue
 
         try {
             file_put_contents($tempPath, $storage->get($file->s3_key));
-            $result = $extractor->extract($tempPath, $file->mime_type);
+            $result = $extractor->extract($tempPath, $file->mime_type, $file->record?->category ?? 'lab_report');
 
             $file->update([
                 'ocr_extracted' => true,

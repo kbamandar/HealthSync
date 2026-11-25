@@ -46,4 +46,34 @@ class OcrExtractionTest extends TestCase
 
         $this->assertNull($result['raw_text']);
     }
+
+    public function test_extracts_prescription_fields_when_category_is_prescription(): void
+    {
+        $path = tempnam(sys_get_temp_dir(), 'ocr_test_').'.pdf';
+        file_put_contents($path, FakePdf::withLines([
+            'Dr. Ramesh Sharma, MD',
+            '22/11/2026',
+            'Tab. Metformin 500mg - 1-0-1 (after food) x 30 days',
+        ]));
+
+        $result = app(OcrExtractor::class)->extract($path, 'application/pdf', 'prescription');
+        unlink($path);
+
+        $this->assertSame('Dr. Ramesh Sharma', $result['fields']['doctor_name']);
+        $this->assertSame('2026-11-22', $result['fields']['prescription_date']);
+        $this->assertCount(1, $result['fields']['medicines']);
+        $this->assertSame('Metformin 500mg', $result['fields']['medicines'][0]['name']);
+    }
+
+    public function test_degrades_gracefully_for_a_corrupt_prescription_file(): void
+    {
+        $path = tempnam(sys_get_temp_dir(), 'ocr_test_').'.pdf';
+        file_put_contents($path, 'this is not a real pdf');
+
+        $result = app(OcrExtractor::class)->extract($path, 'application/pdf', 'prescription');
+        unlink($path);
+
+        $this->assertNull($result['raw_text']);
+        $this->assertSame(['doctor_name' => null, 'prescription_date' => null, 'medicines' => []], $result['fields']);
+    }
 }

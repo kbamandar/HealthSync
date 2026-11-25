@@ -38,6 +38,37 @@ export interface HealthRecord {
 
 export type RecordFileType = "pdf" | "jpg" | "png";
 
+export interface OcrTestValue {
+  name: string;
+  value: number;
+  unit: string | null;
+}
+
+export interface OcrLabReportFields {
+  recordDate: string | null;
+  labName: string | null;
+  testValues: OcrTestValue[];
+}
+
+export interface OcrMedicine {
+  name: string;
+  frequency: string;
+  durationDays: number | null;
+}
+
+export interface OcrPrescriptionFields {
+  doctorName: string | null;
+  prescriptionDate: string | null;
+  medicines: OcrMedicine[];
+}
+
+export interface OcrData {
+  rawText: string | null;
+  // Shape depends on the record's category: lab-report-style fields for
+  // most categories, prescription fields when category is "prescription".
+  fields: OcrLabReportFields | OcrPrescriptionFields;
+}
+
 export interface RecordFile {
   id: string;
   recordId: string;
@@ -46,6 +77,6 @@ export interface RecordFile {
   fileSizeBytes: number | null;
   mimeType: string | null;
   ocrExtracted: boolean;
-  ocrData: Record<string, unknown> | null;
+  ocrData: OcrData | null;
   createdAt: string;
 }

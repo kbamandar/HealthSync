@@ -12,6 +12,7 @@ use App\Models\RecordFile;
 use App\Services\Family\FamilyGroupProvisioner;
 use App\Services\Records\RecordStorageService;
 use App\Services\Records\VirusScanService;
+use App\Services\Reminders\PrescriptionReminderSuggester;
 use App\Services\Reminders\VaccinationReminderSuggester;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
@@ -29,6 +30,7 @@ class HealthRecordController extends Controller
         private readonly RecordStorageService $storage,
         private readonly VirusScanService $virusScan,
         private readonly VaccinationReminderSuggester $vaccinationReminders,
+        private readonly PrescriptionReminderSuggester $prescriptionReminders,
     ) {}
 
     public function index(Request $request)
@@ -264,26 +266,52 @@ class HealthRecordController extends Controller
 
         $fields = $file->ocr_data['fields'];
         $updates = [];
+        $remindersCreated = collect();
 
-        if (! $record->record_date && ! empty($fields['record_date'])) {
-            $updates['record_date'] = $fields['record_date'];
+        if ($record->category === 'prescription') {
+            if (! $record->record_date && ! empty($fields['prescription_date'])) {
+                $updates['record_date'] = $fields['prescription_date'];
+            }
+
+            if (! $record->doctor_name && ! empty($fields['doctor_name'])) {
+                $updates['doctor_name'] = $fields['doctor_name'];
+            }
+
+            if ($updates !== []) {
+                $record->update($updates);
+            }
+
+            if (! empty($fields['medicines'])) {
+                $remindersCreated = $this->prescriptionReminders->suggestFor($record, $fields['medicines']);
+            }
+        } else {
+            if (! $record->record_date && ! empty($fields['record_date'])) {
+                $updates['record_date'] = $fields['record_date'];
+            }
+
+            if (! $record->hospital_clinic && ! empty($fields['lab_name'])) {
+                $updates['hospital_clinic'] = $fields['lab_name'];
+            }
+
+            if (! $record->notes && ! empty($fields['test_values'])) {
+                $updates['notes'] = collect($fields['test_values'])
+                    ->map(fn (array $t) => $t['name'].': '.$t['value'].($t['unit'] ? ' '.$t['unit'] : ''))
+                    ->implode("\n");
+            }
+
+            if ($updates !== []) {
+                $record->update($updates);
+            }
         }
 
-        if (! $record->hospital_clinic && ! empty($fields['lab_name'])) {
-            $updates['hospital_clinic'] = $fields['lab_name'];
-        }
-
-        if (! $record->notes && ! empty($fields['test_values'])) {
-            $updates['notes'] = collect($fields['test_values'])
-                ->map(fn (array $t) => $t['name'].': '.$t['value'].($t['unit'] ? ' '.$t['unit'] : ''))
-                ->implode("\n");
-        }
-
-        if ($updates !== []) {
-            $record->update($updates);
-        }
-
-        return ApiResponse::success($this->serialize($record, withFiles: true));
+        return ApiResponse::success(array_merge(
+            $this->serialize($record, withFiles: true),
+            ['reminders_created' => $remindersCreated->map(fn ($r) => [
+                'id' => $r->id,
+                'title' => $r->title,
+                'description' => $r->description,
+            ])->all()],
+        ));
     }
 
     public function recycleBin(Request $request)
