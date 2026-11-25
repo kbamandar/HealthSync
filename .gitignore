@@ -10,6 +10,8 @@ build/
 .turbo/
 
 # Env files
+.env
+.env.local
 .env.*.local
 !.env.example
 
@@ -47,5 +49,5 @@ npm-debug.log*
 Thumbs.db
 
 # IDE
+.vscode/
 .idea/
-config.bat
